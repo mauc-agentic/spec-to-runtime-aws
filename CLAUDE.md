@@ -8,7 +8,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Stack:** Python + Strands Agents (framework de agentes de AWS), ejecutado en Bedrock AgentCore, con API Gateway, Lambda, SQS, CloudWatch y Secrets Manager. Toda la infraestructura va como IaC (herramienta por decidir: CDK o Terraform). Fecha de la charla: **2026-09-26**.
 
-Plugins de Claude Code: `aiup-core` (documentación AIUP, independiente del stack) y `aws-agents` (skills `agents-get-started`, `agents-build`, `agents-deploy`, `agents-debug`, etc. para AgentCore). `aiup-vaadin-jooq` está instalado pero **no aplica** a este stack: no uses `/implement`, `/flyway-migration` ni los skills de tests Vaadin/Hilla. El código aún no existe; no asumas nada más allá de lo que esté en el repo o en las specs aprobadas.
+Plugins de Claude Code: `aiup-core` (documentación AIUP, independiente del stack) y `aws-agents` (skills `agents-get-started`, `agents-build`, `agents-deploy`, `agents-debug`, etc. para AgentCore). `aws-agents` **no está instalado ni habilitado** todavía en este entorno (`.claude/settings.json` solo habilita `aiup-core`); instálalo y habilítalo antes de la fase de construcción. `aiup-vaadin-jooq` **no aplica** a este stack y está deshabilitado en `.claude/settings.json`: no uses `/implement`, `/flyway-migration` ni los skills de tests Vaadin/Hilla. El código aún no existe; no asumas nada más allá de lo que esté en el repo o en las specs aprobadas.
+
+**Estado de los specs:** `docs/entity_model.md` es un borrador que solo cubre el ciclo de invocación del agente (`AGENT_REQUEST`, `AGENT_RESULT`, `TOOL_INVOCATION`). El dominio de negocio del agente aún está por confirmar; ampliar el modelo cuando se defina, y esa decisión condiciona los UCs siguientes.
+
+**MCP del proyecto (`.mcp.json`):** `strands-agents` (`uvx strands-agents-mcp-server`, del monorepo `strands-agents/harness-sdk`) expone `search_docs` y `fetch_doc` sobre la documentación de Strands. Consúltalo antes de escribir código con la API de Strands en lugar de asumir de memoria. Requiere `uv` instalado.
 
 ## Reglas obligatorias del flujo de trabajo
 
