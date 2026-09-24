@@ -161,3 +161,9 @@ def test_uc004_retrieval_filters_low_relevance_and_maps_s3_paths():
 
     passages = retrieval.retrieve(KB(), "kb", "q", 4, 0.3)
     assert [p.source_path for p in passages] == ["docs/x.md"]
+
+
+@pytest.mark.parametrize("profile", list(Profile))
+def test_uc004_br003_every_profile_forbids_inventing_reasons(profile):
+    prompt = system_prompt(profile, Role.PARTICIPANT)
+    assert "SOLO en los fragmentos" in prompt and "no infieras" in prompt

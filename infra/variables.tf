@@ -27,3 +27,9 @@ variable "activate_cost_allocation_tag" {
   type        = bool
   default     = false
 }
+
+variable "github_repo" {
+  description = "Repositorio público cuyo contenido carga UC-003 (propietario/nombre)"
+  type        = string
+  default     = "mauc-agentic/spec-to-runtime-aws"
+}
