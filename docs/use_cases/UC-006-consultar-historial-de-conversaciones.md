@@ -6,7 +6,7 @@
 **Use Case Name:** Consultar historial de conversaciones  
 **Primary Actor:** Participante  
 **Goal:** Review own earlier conversations, with their answers and sources, and pick one up again  
-**Status:** Draft
+**Status:** Implemented
 
 **Traces to:** FR-021, FR-022 · NFR-009
 

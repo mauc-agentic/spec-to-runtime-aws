@@ -6,7 +6,7 @@
 **Use Case Name:** Consultar al agente sobre el repositorio  
 **Primary Actor:** Participante  
 **Goal:** Get a clear answer about the repository, backed by cited documents and written for the participant's chosen profile, without waiting for a blank screen  
-**Status:** Draft
+**Status:** Implemented
 
 **Traces to:** FR-002, FR-010, FR-011, FR-015, FR-019, FR-021, FR-023 · NFR-005, NFR-007, NFR-010, NFR-011, NFR-013
 

@@ -6,7 +6,7 @@
 **Use Case Name:** Elegir perfil de respuesta  
 **Primary Actor:** Participante  
 **Goal:** Choose how the agent explains things, so that answers match the participant's level of knowledge  
-**Status:** Draft
+**Status:** Implemented
 
 **Traces to:** FR-016, FR-021
 

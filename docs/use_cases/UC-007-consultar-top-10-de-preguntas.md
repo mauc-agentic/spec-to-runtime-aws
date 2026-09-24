@@ -6,7 +6,7 @@
 **Use Case Name:** Consultar top 10 de preguntas  
 **Primary Actor:** Ponente  
 **Goal:** Learn which topics the audience asked about most, so the speaker can steer the session and close the talk with what interested people the most  
-**Status:** Draft
+**Status:** Implemented
 
 **Traces to:** FR-012, FR-017, FR-020, FR-022 · NFR-005, NFR-007, NFR-009, NFR-011, NFR-013
 

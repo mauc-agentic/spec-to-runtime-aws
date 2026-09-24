@@ -6,7 +6,7 @@
 **Use Case Name:** Sincronizar documentos del repositorio  
 **Primary Actor:** Ponente  
 **Goal:** Bring the agent's knowledge up to date with the current content of the repository  
-**Status:** Draft
+**Status:** Implemented
 
 **Traces to:** FR-014 · NFR-006, NFR-007, NFR-012
 
