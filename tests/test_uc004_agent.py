@@ -284,3 +284,31 @@ def test_uc005_a4_factory_marks_nothing_when_no_memory_is_configured():
         SETTINGS, role=Role.PARTICIPANT, profile=Profile.GENERAL, session_id="s", actor_id="u"
     )
     assert getattr(agent, factory.MEMORY_DEGRADED_ATTR, False) is False
+
+
+def test_fr012_the_aws_docs_sources_are_added_to_the_citations_of_the_speaker_answer():
+    result = SimpleNamespace(stop_reason="end_turn", metrics=None)
+    sources = [
+        {
+            "path": "Gateway targets",
+            "url": "https://docs.aws.amazon.com/x",
+            "excerpt": "",
+            "score": 0.0,
+        }
+    ]
+    agent = FakeAgent(
+        [{"data": "Respuesta"}, {"result": result}], state=FakeState(aws_docs_sources=sources)
+    )
+
+    speaker = {**PAYLOAD, "role": "Speaker"}
+
+    async def go():
+        return [
+            e
+            async for e in handler.run(
+                speaker, SETTINGS, retrieve_fn=lambda _q: [], agent_factory=lambda *_a, **_k: agent
+            )
+        ]
+
+    events = asyncio.run(go())
+    assert events[-1]["type"] == "done" and events[-1]["citations"] == sources

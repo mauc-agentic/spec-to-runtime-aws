@@ -17,6 +17,7 @@ from spec_to_runtime.agent.factory import (
     MEMORY_DEGRADED_ATTR,
     NOTICE_MEMORY_UNAVAILABLE,
     REPORT_KEY,
+    SOURCES_KEY,
 )
 from spec_to_runtime.agent.profiles import NO_SOURCE_MESSAGE, Profile, Role
 
@@ -50,6 +51,18 @@ def parse_payload(payload: dict[str, Any]) -> dict[str, Any]:
         # Opcional: el orquestador lo envía para unir la traza con DynamoDB y los logs.
         "request_id": str(payload.get("request_id", ""))[:64],
     }
+
+
+def _forget(agent, key: str) -> None:
+    state = getattr(agent, "state", None)
+    if state is not None and hasattr(state, "delete"):
+        state.delete(key)
+
+
+def _docs_sources(agent) -> list[dict]:
+    """FR-012: fuentes de la documentación de AWS que usó la herramienta, con enlace verificado."""
+    state = getattr(agent, "state", None)
+    return (state.get(SOURCES_KEY) if state is not None else None) or []
 
 
 def _usage(result) -> dict[str, int]:
@@ -124,6 +137,7 @@ async def _answer(
             # UC-005 A4: sin la memoria se responde solo con la pregunta actual, y se avisa.
             telemetry.annotate(memory="unavailable")
             yield {"type": "notice", "code": NOTICE_MEMORY_UNAVAILABLE}
+        _forget(agent, SOURCES_KEY)  # el estado puede venir de una consulta anterior
         result = None
         async for event in agent.stream_async(request["prompt"]):
             if "data" in event:
@@ -135,7 +149,7 @@ async def _answer(
         telemetry.annotate(outcome="truncated", citations=len(citations))
         yield {
             "type": "done",
-            "citations": citations,
+            "citations": [*citations, *_docs_sources(agent)],
             "no_source": False,
             "truncated": True,
             "usage": _usage(None),
@@ -147,6 +161,8 @@ async def _answer(
         telemetry.annotate(outcome="error", error_type=type(error).__name__)
         yield {"type": "error", "code": "agent_failed", "message": type(error).__name__}
         return
+
+    citations = [*citations, *_docs_sources(agent)]
 
     # El informe del top de preguntas se muestra tal cual, sin que el modelo lo reescriba.
     state = getattr(agent, "state", None)

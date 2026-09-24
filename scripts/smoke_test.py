@@ -11,6 +11,7 @@ Deja el Runtime caliente: úsalo unos minutos antes de la charla.
 """
 
 import json
+import re
 import secrets
 import string
 import subprocess
@@ -47,6 +48,12 @@ sm, idp = (
 db = boto3.resource("dynamodb", region_name=REGION)
 requests_table, usage_table = db.Table(tf("requests_table")), db.Table(tf("usage_table"))
 checks: list[tuple[bool, str]] = []
+
+
+# Enlace real a la documentación de AWS: solo lo puede traer la herramienta del Ponente. No sirve el
+# dominio suelto, porque el propio repositorio (indexado, con este script incluido) lo menciona.
+# Por lo mismo, el repositorio no debe contener enlaces completos a docs.aws.amazon.com.
+AWS_DOCS_URL = re.compile(r"https://docs\.aws\.amazon\.com/")
 
 
 def check(ok: bool, what: str) -> None:
@@ -255,18 +262,18 @@ def main() -> int:
             speaker_token,
             "Busca en la documentación oficial de AWS cómo se añade un target Lambda a un "
             "AgentCore Gateway",
-            lambda r: r["status"] == "Completed" and "docs.aws.amazon.com" in r.get("text", ""),
+            lambda r: r["status"] == "Completed" and AWS_DOCS_URL.search(r.get("text", "")),
             "Technical",
         )
         check(
-            aws_docs["status"] == "Completed" and "docs.aws.amazon.com" in aws_docs.get("text", ""),
+            aws_docs["status"] == "Completed" and AWS_DOCS_URL.search(aws_docs.get("text", "")),
             "el Ponente busca en la documentación de AWS por el servidor MCP (FR-012)",
         )
         participant_docs = ask(
             token, "Busca en la documentación oficial de AWS cómo se añade un target Lambda"
         )
         check(
-            "docs.aws.amazon.com" not in participant_docs.get("text", ""),
+            not AWS_DOCS_URL.search(participant_docs.get("text", "")),
             "un participante no recibe la herramienta de documentación de AWS",
         )
     finally:
