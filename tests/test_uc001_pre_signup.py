@@ -17,8 +17,8 @@ def fake_aws(monkeypatch):
         "SecretString": json.dumps({"event_code": "abc123", "registration_open": True})
     }
     idp.describe_user_pool.return_value = {"UserPool": {"EstimatedNumberOfUsers": 3}}
-    monkeypatch.setattr(pre_signup, "_secrets", secrets)
-    monkeypatch.setattr(pre_signup, "_idp", idp)
+    monkeypatch.setattr(pre_signup, "_secrets", lambda: secrets)
+    monkeypatch.setattr(pre_signup, "_idp", lambda: idp)
     return secrets, idp
 
 

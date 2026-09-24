@@ -29,3 +29,4 @@ Costo fijo esperado: unos 0,40 USD al mes (el secreto). Todo lo demás se paga p
 - Python 3.14 en macOS ignora el `.pth` del paquete editable si tiene la bandera `hidden`. Se resolvió con `pythonpath = ["src"]` en la configuración de pytest, que además funciona igual en el CI.
 - Cognito no aplica exactamente "5 intentos y 15 minutos" (UC-001 BR-005): tiene su propio bloqueo progresivo. Se acepta la diferencia o se ajusta la spec.
 - Cognito envía como máximo 50 correos al día por defecto, igual que el aforo: por eso el registro no verifica el correo.
+- **El CI encontró lo que mi máquina ocultaba:** la Lambda creaba los clientes de boto3 al importar el módulo y fallaba con `NoRegionError` en el runner, que no tiene región configurada; en local pasaba porque hay una región por defecto. Se corrigió creando los clientes de forma perezosa (`functools.cache`). Para reproducirlo en local: `env -u AWS_DEFAULT_REGION AWS_CONFIG_FILE=/dev/null uv run pytest`.

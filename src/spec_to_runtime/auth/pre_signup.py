@@ -4,6 +4,7 @@ Solo confirma cuentas nuevas cuando el código del evento es válido, el registr
 está abierto y no se superó el máximo de cuentas (UC-001 BR-001, BR-002, BR-007).
 """
 
+import functools
 import hmac
 import json
 import os
@@ -15,12 +16,18 @@ class RegistrationError(Exception):
     """Motivo por el que Cognito rechaza el registro (se muestra al participante)."""
 
 
-_secrets = boto3.client("secretsmanager")
-_idp = boto3.client("cognito-idp")
+@functools.cache
+def _secrets():
+    return boto3.client("secretsmanager")
+
+
+@functools.cache
+def _idp():
+    return boto3.client("cognito-idp")
 
 
 def _event_config() -> dict:
-    raw = _secrets.get_secret_value(SecretId=os.environ["EVENT_SECRET_ARN"])["SecretString"]
+    raw = _secrets().get_secret_value(SecretId=os.environ["EVENT_SECRET_ARN"])["SecretString"]
     return json.loads(raw)
 
 
@@ -36,7 +43,7 @@ def handler(event, _context):
     if not hmac.compare_digest(sent.encode(), str(config["event_code"]).encode()):
         raise RegistrationError("INVALID_EVENT_CODE")
 
-    pool = _idp.describe_user_pool(UserPoolId=event["userPoolId"])["UserPool"]
+    pool = _idp().describe_user_pool(UserPoolId=event["userPoolId"])["UserPool"]
     if pool["EstimatedNumberOfUsers"] >= int(os.environ["MAX_ACCOUNTS"]):
         raise RegistrationError("ACCOUNT_LIMIT_REACHED")
 
