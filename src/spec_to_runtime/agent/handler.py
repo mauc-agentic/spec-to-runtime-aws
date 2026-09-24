@@ -9,6 +9,8 @@ from collections.abc import AsyncIterator, Callable
 from dataclasses import asdict
 from typing import Any
 
+from strands.types.exceptions import MaxTokensReachedException
+
 from spec_to_runtime.agent import retrieval
 from spec_to_runtime.agent.config import Settings
 from spec_to_runtime.agent.profiles import NO_SOURCE_MESSAGE, Profile, Role
@@ -92,6 +94,16 @@ async def run(
                 yield {"type": "text", "text": event["data"]}
             elif "result" in event:
                 result = event["result"]
+    except MaxTokensReachedException:
+        # UC-004 BR-005: el tope de longitud recorta la respuesta; el texto parcial ya se emitió.
+        yield {
+            "type": "done",
+            "citations": citations,
+            "no_source": False,
+            "truncated": True,
+            "usage": _usage(None),
+        }
+        return
     except Exception as error:
         # NFR-007: el detalle va a CloudWatch; al participante solo le llega el tipo de error.
         logger.exception("agent_failed session_id=%s", request["session_id"])
@@ -101,4 +113,10 @@ async def run(
     if result is not None and result.stop_reason == "guardrail_intervened":
         yield {"type": "blocked"}
         return
-    yield {"type": "done", "citations": citations, "no_source": False, "usage": _usage(result)}
+    yield {
+        "type": "done",
+        "citations": citations,
+        "no_source": False,
+        "truncated": False,
+        "usage": _usage(result),
+    }
