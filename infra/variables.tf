@@ -21,3 +21,9 @@ variable "max_accounts" {
   type        = number
   default     = 100
 }
+
+variable "activate_cost_allocation_tag" {
+  description = "Activar la etiqueta de costo `project`; solo funciona ~24 h después de crear recursos etiquetados"
+  type        = bool
+  default     = false
+}
