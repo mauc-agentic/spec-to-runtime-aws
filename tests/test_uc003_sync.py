@@ -86,6 +86,29 @@ def test_uc003_br003_sensitive_files_are_never_loaded(path):
     assert not decision.include and decision.reason == "sensitive file"
 
 
+@pytest.mark.parametrize(
+    "path",
+    ["tests/test_uc004_api.py", "scripts/smoke_test.py", "web/tests/data.json", "scripts/x.md"],
+)
+def test_uc003_br001_tests_and_scripts_are_not_indexed(path):
+    decision = rules.decide(path, 10)
+    assert not decision.include and decision.reason == "tests and scripts are not indexed"
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "docs/test_cases/TC-001-x.md",
+        "docs/use_cases/UC-001-x.md",
+        "CLAUDE.md",
+        "README.md",
+        "src/spec_to_runtime/agent/app.py",
+    ],
+)
+def test_uc003_br001_documents_and_application_code_stay_indexed(path):
+    assert rules.decide(path, 10).include
+
+
 def test_uc003_br001_directories_of_dependencies_and_state_are_excluded():
     assert not rules.decide(".venv/lib/x.py", 10).include
     assert not rules.decide("infra/.terraform/providers/a.json", 10).include
@@ -193,14 +216,14 @@ def test_uc003_a6_python_files_with_a_shebang_are_uploaded_without_it():
     # Bedrock rechaza estos archivos con "formato no soportado"; sin la primera línea se indexan.
     s3 = FakeS3()
     scripts = {
-        "scripts/a.py": b'#!/usr/bin/env python3\n"""Doc."""\nprint(1)\n',
+        "tools/a.py": b'#!/usr/bin/env python3\n"""Doc."""\nprint(1)\n',
         "src/b.py": b'"""Doc."""\nprint(2)\n',
-        "scripts/c.sh.md": b"#!/no-es-python\ntexto\n",
+        "tools/c.sh.md": b"#!/no-es-python\ntexto\n",
     }
     run([rf(path) for path in scripts], s3=s3, download=lambda p: scripts[p])
-    assert s3.bodies["scripts/a.py"] == b'"""Doc."""\nprint(1)\n'
+    assert s3.bodies["tools/a.py"] == b'"""Doc."""\nprint(1)\n'
     assert s3.bodies["src/b.py"] == scripts["src/b.py"]  # sin shebang: intacto
-    assert s3.bodies["scripts/c.sh.md"] == scripts["scripts/c.sh.md"]  # solo se toca .py
+    assert s3.bodies["tools/c.sh.md"] == scripts["tools/c.sh.md"]  # solo se toca .py
 
 
 @pytest.mark.parametrize(("body", "expected"), [(b"#!/usr/bin/env python3", b""), (b"", b"")])
