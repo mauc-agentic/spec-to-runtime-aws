@@ -235,6 +235,23 @@ def main() -> int:
             top["status"] == "Completed" and "pregunta" in top["text"].lower(),
             "el Ponente obtiene el top de preguntas",
         )
+        aws_docs = ask(
+            speaker_token,
+            "Busca en la documentación oficial de AWS cómo se añade un target Lambda a un "
+            "AgentCore Gateway",
+            "Technical",
+        )
+        check(
+            aws_docs["status"] == "Completed" and "docs.aws.amazon.com" in aws_docs["text"],
+            "el Ponente busca en la documentación de AWS por el servidor MCP (FR-012)",
+        )
+        participant_docs = ask(
+            token, "Busca en la documentación oficial de AWS cómo se añade un target Lambda"
+        )
+        check(
+            "docs.aws.amazon.com" not in participant_docs.get("text", ""),
+            "un participante no recibe la herramienta de documentación de AWS",
+        )
     finally:
         set_registration(False)
         cleanup([participant, speaker])

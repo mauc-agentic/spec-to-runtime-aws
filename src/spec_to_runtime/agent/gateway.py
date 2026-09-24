@@ -13,8 +13,10 @@ from botocore.auth import SigV4Auth
 from botocore.awsrequest import AWSRequest
 from strands.tools.mcp import MCPClient
 
-# Nombre del target en Terraform: Gateway antepone `ponente___` al nombre de cada herramienta.
-TARGET = "ponente"
+# Nombre del target en Terraform: Gateway antepone `<target>___` al nombre de cada herramienta.
+TARGET = "ponente"  # Lambda con las herramientas del Ponente
+DOCS_TARGET = "aws-docs"  # servidor MCP público de conocimiento de AWS (FR-012)
+DOCS_SEARCH_TOOL = "aws___search_documentation"  # así se llama la herramienta en ese servidor
 _SERVICE = "bedrock-agentcore"
 
 
@@ -55,11 +57,11 @@ class GatewayClient:
         self._url = url
         self._region = region
 
-    def call(self, tool: str, arguments: dict | None = None) -> str:
-        """Ejecuta una herramienta del target y devuelve su texto."""
+    def call(self, tool: str, arguments: dict | None = None, *, target: str = TARGET) -> str:
+        """Ejecuta una herramienta de un target del Gateway y devuelve su texto."""
         client = MCPClient(url=self._url, auth_provider=SigV4HttpxAuth(self._region))
         with client:
-            result = client.call_tool_sync(str(uuid.uuid4()), f"{TARGET}___{tool}", arguments or {})
+            result = client.call_tool_sync(str(uuid.uuid4()), f"{target}___{tool}", arguments or {})
         text = "".join(part.get("text", "") for part in result.get("content", []))
         if result.get("status") == "error":
             raise GatewayError(text[:200])

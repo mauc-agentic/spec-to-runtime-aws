@@ -209,3 +209,21 @@ resource "aws_bedrockagentcore_gateway_target" "speaker" {
     }
   }
 }
+
+# FR-012: segundo target del Gateway, el servidor MCP público de conocimiento de AWS (búsqueda en la
+# documentación oficial). No lleva credenciales ni cuesta dinero; el Gateway solo lo llama cuando el
+# agente del Ponente lo pide. Sale de aquí únicamente la frase de búsqueda del Ponente, nunca las
+# preguntas de los participantes. Las herramientas aparecen como `aws-docs___<herramienta>`.
+resource "aws_bedrockagentcore_gateway_target" "aws_docs" {
+  name               = "aws-docs"
+  gateway_identifier = aws_bedrockagentcore_gateway.tools.gateway_id
+  description        = "Documentación oficial de AWS (servidor MCP público de conocimiento de AWS)"
+
+  target_configuration {
+    mcp {
+      mcp_server {
+        endpoint = "https://knowledge-mcp.global.api.aws"
+      }
+    }
+  }
+}
