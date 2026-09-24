@@ -40,6 +40,7 @@ La aplicación de demostración es un agente que responde preguntas sobre este m
 
 - Documentación AIUP completa: visión, requisitos, modelo de entidades, diagrama y especificaciones de casos de uso, casos de prueba.
 - La aplicación "Pregúntale al repo": un agente en Python con Strands Agents, ejecutado en Amazon Bedrock AgentCore.
+- Controles de costo como parte de la solución: cuotas por usuario, tope global, AWS Budgets con acción de cierre y destrucción del entorno tras cada sesión.
 - Infraestructura en AWS definida 100 % como código con Terraform: API Gateway, Lambda, Bedrock AgentCore (Runtime, Gateway, Memory, Identity), Bedrock Knowledge Bases, S3 y S3 Vectors, Cognito, Bedrock Guardrails, CloudWatch, SQS y Secrets Manager.
 - Uso del servidor MCP de AWS para integrar herramientas de los servicios con el agente.
 - Registro de buenas prácticas y problemas encontrados durante el proceso.
@@ -58,6 +59,7 @@ La aplicación de demostración es un agente que responde preguntas sobre este m
 - Stack: Python 3.14 + Strands Agents. Se eligió porque es el framework de agentes de AWS, integra con más facilidad las herramientas de los servicios AWS y ofrece un servidor MCP.
 - Servicios AWS: API Gateway, Lambda, Bedrock AgentCore, Bedrock Knowledge Bases, S3 y S3 Vectors, Cognito, Bedrock Guardrails, CloudWatch, SQS y Secrets Manager, todos aprovisionados por Terraform. Región única `us-east-1`.
 - Modelo de lenguaje: Amazon Nova 2 Lite.
+- **Presupuesto: 50 USD en total** para todo el proyecto, con un aforo esperado de 50 participantes. Es un límite duro que se aplica con cuotas en runtime, alertas y destrucción del entorno tras cada sesión.
 - Nada se mergea a `main` sin PR, CI en verde, commits firmados, pruebas en verde y cobertura del spec certificada.
 - Fecha de la charla: **2026-09-26**. Condiciona el alcance: los UCs se implementan por prioridad y solo se muestra como terminado lo que llegó a `Tested`.
 
@@ -66,4 +68,5 @@ La aplicación de demostración es un agente que responde preguntas sobre este m
 - Un tercero puede clonar el repo y reproducir una demo siguiendo solo `docs/`.
 - El 100 % de los UC en estado `Implemented` o superior tienen cobertura verificada sin drift entre spec, código y tests.
 - Las demos se ejecutan en vivo durante la charla sin intervención manual fuera de lo documentado.
+- El gasto total de AWS no supera 50 USD, con 50 participantes en la charla.
 - Una misma pregunta produce respuestas diferenciadas para los tres perfiles, y ninguna respuesta cita documentos de un nivel de acceso mayor al del rol del usuario.

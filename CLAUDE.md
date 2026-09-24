@@ -48,6 +48,7 @@ AIUP no tiene plugin de construcción para Python + Strands, así que la impleme
 
 - Implementa solo UCs en estado `Approved`, en su rama, con tests que referencien el ID (`UC-XXX`) en nombre o docstring para mantener la trazabilidad.
 - El modelo de entidades de `docs/entity_model.md` se implementa como modelos Python, no como migraciones Flyway.
+- **Presupuesto duro de 50 USD** para todo el proyecto (`docs/charla/presupuesto.md`, NFR-012 a NFR-014). No crear recursos de costo fijo (NAT Gateway, OpenSearch Serverless, throughput aprovisionado, KMS CMK, VPC endpoints); antes de agregar un servicio nuevo, estima su costo; y destruye el entorno al terminar cada sesión.
 - Ningún recurso AWS se crea a mano: todo pasa por IaC y queda documentado en `docs/charla/`.
 - Para auditar cobertura de un UC/TC contra su spec usa la revisión de `uc-coverage` (`/coverage-check UC-XXX`), que es de solo lectura; hazlo antes de pedir review y antes de mergear.
 
