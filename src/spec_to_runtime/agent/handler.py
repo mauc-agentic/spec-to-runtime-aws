@@ -4,6 +4,7 @@ Emite eventos simples que la Lambda orquestadora traduce a estados y texto parci
 status, text, blocked, no_source, done y error.
 """
 
+import logging
 from collections.abc import AsyncIterator, Callable
 from dataclasses import asdict
 from typing import Any
@@ -11,6 +12,8 @@ from typing import Any
 from spec_to_runtime.agent import retrieval
 from spec_to_runtime.agent.config import Settings
 from spec_to_runtime.agent.profiles import NO_SOURCE_MESSAGE, Profile, Role
+
+logger = logging.getLogger(__name__)
 
 MAX_PROMPT_CHARS = 500  # UC-004 BR-001
 
@@ -89,7 +92,9 @@ async def run(
                 yield {"type": "text", "text": event["data"]}
             elif "result" in event:
                 result = event["result"]
-    except Exception as error:  # noqa: BLE001 - UC-004 A7: cualquier fallo se informa y se reintenta
+    except Exception as error:
+        # NFR-007: el detalle va a CloudWatch; al participante solo le llega el tipo de error.
+        logger.exception("agent_failed session_id=%s", request["session_id"])
         yield {"type": "error", "code": "agent_failed", "message": type(error).__name__}
         return
 

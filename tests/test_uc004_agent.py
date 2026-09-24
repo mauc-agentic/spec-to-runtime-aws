@@ -92,10 +92,12 @@ def test_uc004_a6_guardrail_intervention_is_reported_as_blocked():
     assert events[-1] == {"type": "blocked"}
 
 
-def test_uc004_a7_agent_failure_is_reported_so_the_user_can_retry():
+def test_uc004_a7_agent_failure_is_reported_so_the_user_can_retry(caplog):
     events, _ = _collect(PAYLOAD, _passages(), [RuntimeError("boom")])
     assert events[-1]["type"] == "error"
     assert events[-1]["code"] == "agent_failed"
+    # NFR-007: el detalle queda en los logs aunque el participante solo vea el tipo de error
+    assert "agent_failed session_id=s1" in caplog.text and "boom" in caplog.text
 
 
 @pytest.mark.parametrize(
