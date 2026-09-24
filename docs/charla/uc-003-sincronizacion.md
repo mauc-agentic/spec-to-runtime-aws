@@ -33,6 +33,7 @@ La puntuación de Titan **no discrimina bien**: preguntas sin relación con el r
 ## Problemas conocidos
 
 - **El código añade ruido a las preguntas de negocio:** indexar `src/` y `tests/` hace que preguntas coloquiales devuelvan fragmentos de código. Se mitigó pidiendo preferir `docs/`, pero la búsqueda es solo semántica (S3 Vectors no ofrece búsqueda híbrida). Si molesta en la demo, se puede excluir `tests/` en `rules.py`.
+- **Probable explicación de los 2 objetos que faltaban (sin confirmar):** en aquel momento había scripts con shebang, que Bedrock rechaza (ver el aprendizaje del 2026-09-24 más abajo). Lo original sigue así:
 - **Faltan 2 objetos por explicar:** se subieron 52 y la ingesta contó 50, sin marcar ninguno como omitido ni fallido. Los siete tipos de archivo son recuperables, así que no afecta a lo probado; queda por identificar cuáles son.
 - **No hay registro propio de cada sincronización:** UC-003 BR-008 se cumple con el historial de trabajos de ingesta de Bedrock (documentos examinados y fallidos, inicio y fin), sin tabla adicional.
 
@@ -40,3 +41,7 @@ La puntuación de Titan **no discrimina bien**: preguntas sin relación con el r
 
 - `python3` del sistema (Homebrew 3.14) no tiene boto3: para scripts sueltos, `uv run python`.
 - El zip de Lambda incluía `__pycache__`, cuyo contenido depende de la máquina y cambiaría el hash entre tu Mac y el CI: se excluyó explícitamente.
+- **Bedrock rechaza los `.py` que empiezan con shebang (2026-09-24).** Cada ingesta terminaba `COMPLETE` pero con 4 documentos fallidos («formato no soportado»): los cuatro `scripts/*.py`, todos con `#!/usr/bin/env python3`. Se confirmó con dos archivos de prueba, con y sin shebang: solo el primero falló. La sincronización ahora sube los `.py` sin esa primera línea (`prepare_body` en `sync/sync.py`; el original en GitHub no cambia). Como un archivo sin cambios no se vuelve a subir, los 4 ya cargados se migraron borrando su copia del bucket y sincronizando de nuevo: 0 fallidos y los 4 `INDEXED`.
+- **Que la ingesta diga `COMPLETE` no significa que todo se indexó.** Mirar siempre `documents_failed` y `failureReasons` del trabajo (`aws bedrock-agent get-ingestion-job`). El error solo se vio al probar `POST /admin/sync` con cambios y leer las estadísticas.
+- **Cifras de la prueba de `POST /admin/sync` con cambios:** 130 archivos examinados, 11 nuevos, 28 modificados, 0 eliminados y 65 sin cambios; respuesta en 13,2 s; ingesta de unos 2,5 minutos.
+- En zsh, `GID` es una variable especial: asignarla falla con «failed to change group ID» (ya anotado en `agentcore-gateway.md`).

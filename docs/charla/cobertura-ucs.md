@@ -10,7 +10,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 |---|---|---|
 | UC-001 Autenticarse | Implemented | Cubierto; spec ajustada a Cognito el 2026-09-24 (bloqueo y contraseña) |
 | UC-002 Elegir perfil | Implemented | Cubierto; spec ajustada (General por defecto) y sin tests de la web |
-| UC-003 Sincronizar documentos | Implemented | El mejor cubierto; falta probar el `POST` con cambios desde la web |
+| UC-003 Sincronizar documentos | Implemented | El mejor cubierto; el `POST` con cambios se probó el 2026-09-24 (a mano, por la API y sin navegador) |
 | UC-004 Consultar al agente | Implemented | Muy cubierto; A4 y la deriva de A1 cerradas el 2026-09-24 |
 | UC-005 Continuar conversación | Implemented | Cubierto; A4 cerrado el 2026-09-24 (con un límite: ver abajo) |
 | UC-006 Consultar historial | Implemented | Cubierto; A4 cerrado el 2026-09-24 |
@@ -31,7 +31,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 
 ### UC-003 Sincronizar documentos del repositorio
 - **Cubierto:** todo, con 13 tests y una sincronización real (59 archivos, 52 cargados, 0 fallos; A2 comprobado en vivo).
-- **Hueco:** el `POST /admin/sync` desde la web **con cambios** no se ha ejecutado de punta a punta (solo el estado y la llamada sin cambios). La API corta a los 30 s y una sincronización con muchos cambios podría acercarse.
+- **Hueco cerrado el 2026-09-24:** `POST /admin/sync` con cambios reales (11 nuevos y 28 modificados) respondió 200 en 13,2 s, dentro del corte de 30 s de la API, y la ingesta terminó `COMPLETE`. Se llamó por la API con un Ponente temporal, no desde el botón de la web. La prueba destapó un fallo que la sincronización arrastraba: 4 documentos fallidos en cada ingesta por el shebang de los `scripts/*.py`; arreglado (ver `uc-003-sincronizacion.md`).
 - **Nota:** BR-008 se cumple con el historial de trabajos de ingesta de Bedrock, no con tabla propia.
 
 ### UC-004 Consultar al agente sobre el repositorio
@@ -74,8 +74,8 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 
 1. ~~AgentCore Gateway (FR-012)~~ Hecho el 2026-09-24 con los dos targets (Lambda y servidor MCP de AWS).
 2. ~~**TC-001**~~ Escrito en `docs/test_cases/TC-001-conversacion-y-analisis-del-ponente.md` (`Draft`, falta la revisión del autor). Sigue sin automatizarse: la web no tiene pruebas de navegador.
-3. ~~Cerrar los huecos de UC-004 A4, UC-005 A4 y UC-006 A4~~ Cerrados el 2026-09-24 (`docs/charla/huecos-a4.md`); faltan la prueba en navegador de los avisos y de "Mostrar más", y la de memoria caída de verdad.
+3. ~~Cerrar los huecos de UC-004 A4, UC-005 A4 y UC-006 A4~~ Cerrados el 2026-09-24 (`docs/charla/huecos-a4.md`); los avisos de enmascarado y "Mostrar más" se vieron en un navegador real; falta solo la prueba de memoria caída de verdad.
 4. ~~Decidir las derivas~~ Resueltas el 2026-09-24: UC-004 A1 en código; UC-001, UC-002, UC-004 y UC-007 en la spec (UC-007 BR-002 en ambos).
-5. Probar el **`POST /admin/sync` con cambios** desde la web.
+5. ~~Probar el `POST /admin/sync` con cambios~~ Hecho por la API el 2026-09-24; queda pulsar el botón en la web.
 6. Probar la web en un **celular físico** y con lector de pantalla.
 7. Ensayo con `scripts/smoke_test.py` unos minutos antes, y vaciar datos con `scripts/reset_event_data.py --yes`.
