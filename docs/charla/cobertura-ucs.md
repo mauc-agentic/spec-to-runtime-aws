@@ -22,7 +22,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 - **Cubierto:** flujo principal, A1, A4, A5, A8, BR-001, BR-002, BR-003, BR-007 (5 tests de la Lambda y la prueba en el navegador con registro real y sesión de Ponente); BR-006 y BR-008 por configuración de Cognito.
 - **Deriva resuelta, A3 y BR-005:** la spec pasa a "bloqueo temporal decidido por Cognito, sin cifras". No se ha comprobado aquí cuántos intentos ni cuánto dura el bloqueo real; la spec no promete ninguna cifra.
 - **Deriva resuelta, A7 y BR-004:** la spec pide ahora 8 caracteres, una minúscula y un número, que es la política real de Cognito.
-- **Sin test:** A2 y A6 (los mensajes de error de `web/cognito.js`); se comprobaron a mano.
+- **A2 (contraseña incorrecta):** verificado en un navegador real el 2026-09-24 (mensaje genérico, igual para cuenta existente e inexistente). **Sin verificar:** A6 (correo ya registrado), porque exige crear cuentas; no hay test automático de `web/cognito.js`.
 
 ### UC-002 Elegir perfil de respuesta
 - **Cubierto:** flujo principal, A2, A3, A4, BR-001, BR-002, BR-003, BR-004, BR-005 (2 tests del agente y de la API, y la prueba en el navegador).

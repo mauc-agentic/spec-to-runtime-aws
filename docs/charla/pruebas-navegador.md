@@ -14,7 +14,7 @@ Verificación manual asistida en Chrome contra la web desplegada, con una cuenta
 | UC-004 BR-009: formato en pantalla de celular | Sin desborde horizontal del documento en 606 px y con el contenedor limitado a 390 px; los bloques de código se contienen con su propio scroll horizontal; el cuadro de texto usa 16 px (evita el zoom automático de iOS); `viewport` correcto |
 | **Defecto encontrado y corregido:** listas numeradas | Ver abajo |
 | Los 4 botones de ejemplo | Responden en 5 a 7 s y citan fuentes. Un problema de contenido en el primero: ver abajo |
-| UC-001 A2 (contraseña incorrecta) | **Pendiente:** hay que mirar el mensaje con la persona escribiendo la contraseña equivocada. UC-001 A6 no se hizo (exige crear cuentas) |
+| UC-001 A2 (contraseña incorrecta) | Correcto: muestra «El correo o la contraseña no son correctos.», con `role="alert"`, sin revelar cuál falló, y deja el correo escrito. Con un correo que no existe Cognito devuelve el mismo error (`PreventUserExistenceErrors` activo) y la web usa el mismo texto para ambos casos. UC-001 A6 no se hizo (exige crear cuentas) |
 
 ## Defecto corregido: listas numeradas
 
