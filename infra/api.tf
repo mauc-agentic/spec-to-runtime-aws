@@ -117,7 +117,6 @@ resource "aws_lambda_function" "api" {
   # checkov:skip=CKV_AWS_173:Variables sin CMK; no contienen secretos
   # checkov:skip=CKV_AWS_272:Sin firma de código; el paquete lo genera Terraform desde este repo
   # checkov:skip=CKV_AWS_115:Sin límite de concurrencia; el throttling de API Gateway y las cuotas ya acotan el uso
-  # checkov:skip=CKV_AWS_50:Sin X-Ray; los logs de CloudWatch bastan para el evento
   function_name    = "${local.name}-api"
   role             = aws_iam_role.api.arn
   runtime          = "python3.14"
@@ -126,6 +125,11 @@ resource "aws_lambda_function" "api" {
   source_code_hash = data.archive_file.app.output_base64sha256
   timeout          = 29 # API Gateway corta a los 30 s
   memory_size      = 256
+
+  tracing_config {
+    mode = "Active"
+  }
+
 
   environment {
     variables = {
@@ -207,7 +211,6 @@ resource "aws_lambda_function" "orchestrator" {
   # checkov:skip=CKV_AWS_173:Variables sin CMK; no contienen secretos
   # checkov:skip=CKV_AWS_272:Sin firma de código; el paquete lo genera Terraform desde este repo
   # checkov:skip=CKV_AWS_115:La concurrencia se limita en el mapeo de eventos (maximum_concurrency), que protege el presupuesto
-  # checkov:skip=CKV_AWS_50:Sin X-Ray; los logs de CloudWatch bastan para el evento
   function_name    = "${local.name}-orchestrator"
   role             = aws_iam_role.orchestrator.arn
   runtime          = "python3.14"
@@ -216,6 +219,11 @@ resource "aws_lambda_function" "orchestrator" {
   source_code_hash = data.archive_file.app.output_base64sha256
   timeout          = 90 # UC-004 BR-007: la solicitud falla a los 60 s; el resto es margen para cerrar
   memory_size      = 256
+
+  tracing_config {
+    mode = "Active"
+  }
+
 
   environment {
     variables = {
