@@ -1,6 +1,6 @@
 # Infraestructura base (Terraform)
 
-Primera capa de `infra/`, la que no depende del código del agente. Región `us-east-1`, state en S3. Estado: **planificada y validada; aplicar tras revisar el plan**.
+Primera capa de `infra/`, la que no depende del código del agente. Región `us-east-1`, state en S3. Estado: **aplicada el 2026-09-24** (25 recursos + el presupuesto). Prueba real: un registro con código falso se rechaza con `REGISTRATION_CLOSED` y no crea cuentas; la Knowledge Base queda `ACTIVE`. Pendiente: activar la etiqueta de costo (ver abajo).
 
 ## Qué crea
 
@@ -30,3 +30,16 @@ Costo fijo esperado: unos 0,40 USD al mes (el secreto). Todo lo demás se paga p
 - Cognito no aplica exactamente "5 intentos y 15 minutos" (UC-001 BR-005): tiene su propio bloqueo progresivo. Se acepta la diferencia o se ajusta la spec.
 - Cognito envía como máximo 50 correos al día por defecto, igual que el aforo: por eso el registro no verifica el correo.
 - **El CI encontró lo que mi máquina ocultaba:** la Lambda creaba los clientes de boto3 al importar el módulo y fallaba con `NoRegionError` en el runner, que no tiene región configurada; en local pasaba porque hay una región por defecto. Se corrigió creando los clientes de forma perezosa (`functools.cache`). Para reproducirlo en local: `env -u AWS_DEFAULT_REGION AWS_CONFIG_FILE=/dev/null uv run pytest`.
+- **La etiqueta de costo no se puede activar el mismo día:** `aws_ce_cost_allocation_tag` falló con "Tag keys not found: project" porque la etiqueta solo aparece en Facturación cuando ya hay recursos etiquetados (hasta 24 h). El primer `apply` dejó 24 recursos y falló en los dos del presupuesto. Solución: `activate_cost_allocation_tag` (por defecto `false`) y el presupuesto sin dependencia de la etiqueta. **Hasta activarla, el presupuesto existe pero no ve gasto:** pasado un día, aplicar con `-var activate_cost_allocation_tag=true`.
+- Un `apply` fallido a medias deja el state consistente: lo creado queda registrado y el siguiente `plan` solo propone lo que faltó.
+
+## Operación durante el evento
+
+```bash
+# Ver el código del evento
+aws secretsmanager get-secret-value --secret-id spec-to-runtime/event --query SecretString --output text
+
+# Abrir (true) o cerrar (false) el registro, conservando el código
+aws secretsmanager put-secret-value --secret-id spec-to-runtime/event \
+  --secret-string '{"event_code":"<codigo>","registration_open":true}'
+```
