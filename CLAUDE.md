@@ -67,7 +67,12 @@ Terraform (`infra/`, state remoto en S3; el bucket se crea una vez desde `infra/
 
 ```bash
 terraform -chdir=infra/bootstrap init && terraform -chdir=infra/bootstrap apply   # solo la primera vez
-terraform -chdir=infra init && terraform -chdir=infra validate && terraform -chdir=infra plan
+terraform -chdir=infra init -backend-config=backend.hcl && terraform -chdir=infra validate && terraform -chdir=infra plan
+```
+
+El repo es público, así que dos datos van en archivos **locales ignorados por git**, con un `.example` como modelo: `infra/backend.hcl` (el bucket del estado lleva el ID de la cuenta; copia `backend.hcl.example`) e `infra/terraform.tfvars` (`alert_email`, sin valor por defecto; copia `terraform.tfvars.example`). Sin ellos `init` y `plan` piden esos valores. El CI no los necesita (`init -backend=false`).
+
+```bash
 ```
 
 Agente en AgentCore Runtime (contenedor arm64, Python 3.14; el zip de AgentCore no admite 3.14):

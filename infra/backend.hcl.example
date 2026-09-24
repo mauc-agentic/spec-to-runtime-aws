@@ -1,0 +1,3 @@
+# Copia este archivo a infra/backend.hcl (queda fuera de git) y sustituye <account-id> por el ID de tu
+# cuenta. El bucket lo crea infra/bootstrap; su nombre sale de `terraform -chdir=infra/bootstrap output`.
+bucket = "spec-to-runtime-tfstate-<account-id>"

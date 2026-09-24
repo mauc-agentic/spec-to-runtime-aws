@@ -5,9 +5,8 @@ variable "region" {
 }
 
 variable "alert_email" {
-  description = "Correo que recibe las alertas de presupuesto"
+  description = "Correo que recibe las alertas de presupuesto. Sin valor por defecto: el repositorio es público; va en infra/terraform.tfvars (local, ignorado por git; ver terraform.tfvars.example)"
   type        = string
-  default     = "migueluribe.ing@gmail.com"
 }
 
 variable "budget_usd" {
