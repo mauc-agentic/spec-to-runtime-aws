@@ -12,7 +12,7 @@ Plugins de Claude Code: `aiup-core` (documentación AIUP, independiente del stac
 
 **Estado de los specs:** `docs/entity_model.md` es un borrador que solo cubre el ciclo de invocación del agente (`AGENT_REQUEST`, `AGENT_RESULT`, `TOOL_INVOCATION`). El dominio de negocio del agente aún está por confirmar; ampliar el modelo cuando se defina, y esa decisión condiciona los UCs siguientes.
 
-**MCP del proyecto (`.mcp.json`):** `strands-agents` (`uvx strands-agents-mcp-server`, del monorepo `strands-agents/harness-sdk`) expone `search_docs` y `fetch_doc` sobre la documentación de Strands. Consúltalo antes de escribir código con la API de Strands en lugar de asumir de memoria. Requiere `uv` instalado. `terraform` (`hashicorp/terraform-mcp-server` vía Docker, solo toolset `registry`) consulta providers y módulos del Terraform Registry: úsalo antes de escribir recursos `aws_*` en lugar de asumir atributos de memoria. Requiere Docker en ejecución.
+**MCP del proyecto (`.mcp.json`):** `strands-agents` (`uvx strands-agents-mcp-server`, del monorepo `strands-agents/harness-sdk`) expone `search_docs` y `fetch_doc` sobre la documentación de Strands. Consúltalo antes de escribir código con la API de Strands en lugar de asumir de memoria. Requiere `uv` instalado. `terraform` (`hashicorp/terraform-mcp-server` vía Docker, solo toolset `registry`) consulta providers y módulos del Terraform Registry: úsalo antes de escribir recursos `aws_*` en lugar de asumir atributos de memoria. Requiere Docker en ejecución. Aún no se ha probado contra una invocación real: valídalo la primera vez que escribas Terraform (ver `docs/charla/iac-terraform.md`).
 
 ## Reglas obligatorias del flujo de trabajo
 
