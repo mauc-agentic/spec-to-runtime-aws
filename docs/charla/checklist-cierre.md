@@ -12,6 +12,8 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 - [x] `POST /admin/sync` con cambios probado por la API (13,2 s, 11 nuevos y 28 modificados).
 - [x] Falla de ingesta de los `scripts/*.py` (shebang) arreglada: 0 fallidos y los 4 `INDEXED`.
 - [x] Las fuentes de la documentación de AWS salen siempre al final de la respuesta del Ponente (antes dependían de que el modelo las citara); prueba de humo 15/15 sin necesitar el reintento.
+- [x] Ensayo del 2026-09-24 con `main` ya mergeado (#29): `smoke_test.py` 15/15, sin reintentos; todas las respuestas entre 3 y 8 s con el contenedor caliente (NFR-011 pide 10 s o menos). Knowledge Base sincronizada con `main` (2 nuevos, 11 modificados, 98 escaneados, 0 fallidos).
+- [x] Datos de ensayo vaciados con `reset_event_data.py --yes` y verificados con la simulación: 0 preguntas, 0 contadores de cuota y 0 eventos de memoria (había 486 de 32 actores de prueba).
 - [x] `main` validado tras los merges: tests, lint, Terraform sin desvío, checkov, validador de UC y CI en verde.
 
 ## Antes de la charla
@@ -20,8 +22,9 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 - [ ] **Tú:** probar la web en un celular físico (formato de las respuestas, teclado, historial).
 - [ ] **Tú:** probar la web con un lector de pantalla.
 - [ ] **Tú:** confirmar los umbrales `Needs review` de NFR-004 y NFR-011 (o pedir que se midan de nuevo).
-- [ ] **Yo, el día del ensayo:** `scripts/smoke_test.py` (15 comprobaciones) unos minutos antes, para calentar el contenedor (la primera pregunta tarda ~15 s en frío).
-- [ ] **Yo, tras el ensayo:** `scripts/reset_event_data.py --yes` para arrancar limpio, sin `--users` si el Ponente ya existe.
+- [ ] **Tú (BLOQUEANTE): crear la cuenta del Ponente.** Hoy el pool tiene **0 usuarios**: el entorno se reconstruyó y las pruebas usaron cuentas temporales. Sin esa cuenta no hay top 10 ni sincronización en la charla. Se crea a mano con el CLI y se agrega al grupo `Ponente` (`aws cognito-idp admin-create-user` y `admin-add-user-to-group`; ver «Ponente» en `infraestructura-base.md`). El asistente no la creó porque exige elegir el correo y una contraseña que solo debe conocer quien la usa. Después, probar el login en la web.
+- [ ] **Tú, al empezar la charla: abrir el registro.** Está **cerrado** (`registration_open: false`). Comandos en «Operación durante el evento» de `infraestructura-base.md`; ciérralo al terminar. El código del evento se lee del secreto y no se escribe en ningún documento.
+- [ ] **Yo, 5 minutos antes de la charla:** una pasada corta de `smoke_test.py` para calentar el contenedor. El Runtime libera la sesión tras 5 minutos de inactividad, así que el calentamiento del ensayo ya no vale y la primera pregunta tarda ~15 s en frío. Ojo: la prueba de humo cierra el registro al terminar; si ya lo abriste, vuelve a abrirlo. Después, `reset_event_data.py --yes` para arrancar limpio.
 - [ ] **Tú:** decidir si el entorno se destruye esta noche (y se reconstruye para el ensayo) o se deja hasta después de la charla; ver `agentcore-gateway.md` para el orden de reconstrucción.
 - [ ] **Después de la charla (yo, si lo pides):** `terraform destroy` y comprobar que no queda ningún recurso de la demo (NFR-014).
 
@@ -47,3 +50,9 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 
 - [ ] Políticas Cedar por herramienta en el Gateway (defensa en profundidad).
 - [ ] Cerrar FR-008 y NFR-001 a NFR-003, que siguen `Parcial`.
+
+## Notas del ensayo (2026-09-24)
+
+- **Presupuesto:** AWS Budgets marca 0,00 USD gastados y una previsión de 0,02 USD, pero Billing tarda de 8 a 24 horas en reflejar el gasto, así que no es una lectura fiable de lo gastado hoy. La protección real son las cuotas de la API y el corte automático al 90 %.
+- **Estado:** `terraform plan` sobre `main`: «No changes». CI de `main` en curso cuando se miró.
+- **Entorno:** sigue desplegado y gastando (NFR-014 pide destruirlo al terminar). Reconstruirlo antes de la charla lleva unos minutos, con el orden documentado en `agentcore-gateway.md`.
