@@ -18,7 +18,8 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 
 ## Antes de la charla
 
-- [ ] **Tú (DECIDIR, afecta a la charla): calidad de las respuestas.** «¿Qué es AIUP?», el primer botón de ejemplo, responde que AIUP es «una aplicación» en vez de la metodología, y «¿Cómo instalo las dependencias?» inventa «Python 3.8». Causa medida: el código indexado (`scripts/`, `tests/`) desplaza a `docs/vision.md` y `CLAUDE.md` de los 6 fragmentos que llegan al modelo. Opciones en `pruebas-navegador.md` (no indexar `scripts/` ni `tests/`, o reordenar por ruta, o ambas). Cambiar qué se indexa modifica UC-003 BR-001.
+- [x] Calidad de las respuestas (decisión opción 1, 2026-09-24): `tests/` y `scripts/` ya no se indexan. «¿Qué es AIUP?» y «¿Cuánto cuesta la demo?» responden bien y la pregunta de instalación ya no inventa «Python 3.8». Detalle en `pruebas-navegador.md`.
+- [ ] **Yo, tras mergear el PR del README:** sincronizar la KB (`aws lambda invoke --function-name spec-to-runtime-sync ...`) y repetir «¿Cómo instalo las dependencias y corro los tests?»: debería traer los comandos del README. Si no, reordenar por ruta en `retrieval.retrieve` (opción 2 de `pruebas-navegador.md`).
 
 - [ ] **Tú:** pulsar «Sincronizar documentos» en la web como Ponente y ver que muestra el estado sin error (la prueba de `POST` fue por la API, no por el botón).
 - [ ] **Tú:** probar la web en un celular físico (formato de las respuestas, teclado, historial).

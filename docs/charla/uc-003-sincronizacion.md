@@ -32,7 +32,7 @@ La puntuación de Titan **no discrimina bien**: preguntas sin relación con el r
 
 ## Problemas conocidos
 
-- **El código añade ruido a las preguntas de negocio:** indexar `src/` y `tests/` hace que preguntas coloquiales devuelvan fragmentos de código. Se mitigó pidiendo preferir `docs/`, pero la búsqueda es solo semántica (S3 Vectors no ofrece búsqueda híbrida). Si molesta en la demo, se puede excluir `tests/` en `rules.py`.
+- **El código añadía ruido a las preguntas de negocio (resuelto en parte el 2026-09-24):** indexar `tests/` y `scripts/` desplazaba a `docs/vision.md` y `CLAUDE.md` de los 6 fragmentos que recibe el agente: «¿Qué es AIUP?» respondía que era una aplicación. Desde el 2026-09-24 esas dos carpetas **no se indexan** (`NOISE_DIRS` en `sync/rules.py`; UC-003 BR-001 actualizado; la sincronización quitó 16 archivos y la KB quedó con 0 fallidos). `src/`, `infra/` y `web/` siguen indexados: pueden seguir colándose fragmentos de código en preguntas coloquiales.
 - **Probable explicación de los 2 objetos que faltaban (sin confirmar):** en aquel momento había scripts con shebang, que Bedrock rechaza (ver el aprendizaje del 2026-09-24 más abajo). Lo original sigue así:
 - **Faltan 2 objetos por explicar:** se subieron 52 y la ingesta contó 50, sin marcar ninguno como omitido ni fallido. Los siete tipos de archivo son recuperables, así que no afecta a lo probado; queda por identificar cuáles son.
 - **No hay registro propio de cada sincronización:** UC-003 BR-008 se cumple con el historial de trabajos de ingesta de Bedrock (documentos examinados y fallidos, inicio y fin), sin tabla adicional.
@@ -45,3 +45,5 @@ La puntuación de Titan **no discrimina bien**: preguntas sin relación con el r
 - **Que la ingesta diga `COMPLETE` no significa que todo se indexó.** Mirar siempre `documents_failed` y `failureReasons` del trabajo (`aws bedrock-agent get-ingestion-job`). El error solo se vio al probar `POST /admin/sync` con cambios y leer las estadísticas.
 - **Cifras de la prueba de `POST /admin/sync` con cambios:** 130 archivos examinados, 11 nuevos, 28 modificados, 0 eliminados y 65 sin cambios; respuesta en 13,2 s; ingesta de unos 2,5 minutos.
 - En zsh, `GID` es una variable especial: asignarla falla con «failed to change group ID» (ya anotado en `agentcore-gateway.md`).
+- **Medir la recuperación con `retrieve` ahorra pruebas a ciegas (2026-09-24).** Consultar la Knowledge Base directamente (puntuación y ruta de cada fragmento) mostró por qué fallaban las respuestas, y confirmó la mejora tras quitar `tests/` y `scripts/`: para «¿Qué es AIUP?», `docs/vision.md` pasó del puesto 6 a ocupar 2 de los 6 fragmentos junto con `CLAUDE.md`. Ver `pruebas-navegador.md`.
+- **La KB se sincroniza desde `main` en GitHub:** un cambio de contenido solo se ve tras mergearlo. Sincronizar desde una rama local devuelve `NoChanges`.
