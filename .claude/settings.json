@@ -1,6 +1,7 @@
 {
   "enabledPlugins": {
     "aiup-core@ai-unified-process-marketplace": true,
-    "aiup-vaadin-jooq@ai-unified-process-marketplace": false
+    "aiup-vaadin-jooq@ai-unified-process-marketplace": false,
+    "aws-agents@agent-toolkit-for-aws": true
   }
 }
