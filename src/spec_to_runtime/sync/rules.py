@@ -14,8 +14,13 @@ EXCLUDED_DIRS = {".git", ".venv", "node_modules", ".terraform", "__pycache__", "
 
 # Pruebas y scripts: repiten el vocabulario de los documentos (nombres de UC, "AIUP", comandos) y
 # desplazaban a `docs/vision.md` y `CLAUDE.md` de los pocos fragmentos que recibe el agente. Con ellos
-# indexados, "¿Qué es AIUP?" respondía que era una aplicación (pruebas de navegador, 2026-09-24).
+# indexados, la primera pregunta de ejemplo respondía que la metodología era una aplicación.
 NOISE_DIRS = {"tests", "scripts"}
+
+# Bitácoras de trabajo: citan literalmente las preguntas de ejemplo y sus respuestas, así que la
+# recuperación las trae primero y el agente terminaba narrando las pruebas ("se verificó durante las
+# pruebas de navegador...") en la respuesta al público. Siguen en el repositorio, pero no se indexan.
+WORK_LOGS = {"docs/charla/checklist-cierre.md", "docs/charla/pruebas-navegador.md"}
 
 # Archivos de dependencias: son texto, pero no aportan nada a las respuestas.
 LOCK_PATTERNS = ["*.lock", "*lock.json", "*.lock.hcl"]
@@ -42,6 +47,8 @@ def decide(path: str, size: int) -> Decision:
     name = posixpath.basename(path)
     if any(part in EXCLUDED_DIRS for part in parts[:-1]):
         return Decision(False, "directory excluded")
+    if path in WORK_LOGS:
+        return Decision(False, "working log, not indexed")
     if any(part in NOISE_DIRS for part in parts[:-1]):
         return Decision(False, "tests and scripts are not indexed")
     if _matches(name, SENSITIVE_PATTERNS):

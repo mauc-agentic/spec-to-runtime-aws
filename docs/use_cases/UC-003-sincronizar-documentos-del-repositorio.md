@@ -95,7 +95,7 @@
 
 ### BR-001: What Is Included
 
-Text files of the repository are included: documents in Markdown, diagrams in PlantUML, infrastructure and application code, and configuration files. Tests and helper scripts (the `tests` and `scripts` folders) are left out: they repeat the vocabulary of the documents and push the reference documents out of the few fragments the agent receives. Binary files, dependency lock files and files over 500 KB are skipped.
+Text files of the repository are included: documents in Markdown, diagrams in PlantUML, infrastructure and application code, and configuration files. Tests and helper scripts (the `tests` and `scripts` folders) are left out: they repeat the vocabulary of the documents and push the reference documents out of the few fragments the agent receives. Two working logs (the pre-talk checklist and the browser-test report) are left out for the same reason: they quote the example questions and answers verbatim, and the agent ended up repeating them. Binary files, dependency lock files and files over 500 KB are skipped.
 
 ### BR-002: Main Branch Only
 

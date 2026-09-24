@@ -19,7 +19,8 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 ## Antes de la charla
 
 - [x] Calidad de las respuestas (decisión opción 1, 2026-09-24): `tests/` y `scripts/` ya no se indexan. «¿Qué es AIUP?» y «¿Cuánto cuesta la demo?» responden bien y la pregunta de instalación ya no inventa «Python 3.8». Detalle en `pruebas-navegador.md`.
-- [ ] **Yo, tras mergear el PR del README:** sincronizar la KB (`aws lambda invoke --function-name spec-to-runtime-sync ...`) y repetir «¿Cómo instalo las dependencias y corro los tests?»: debería traer los comandos del README. Si no, reordenar por ruta en `retrieval.retrieve` (opción 2 de `pruebas-navegador.md`).
+- [x] Pregunta de instalación (2026-09-24): tras el README no bastó; con las bitácoras fuera del índice y `docs/faq.md`, 3 de 3 respuestas por la API traen `uv sync`, `uv run pytest` y Python 3.14. Los cinco botones de ejemplo responden bien.
+- [ ] **Yo, tras mergear el PR del FAQ:** sincronizar la KB desde `main` (reemplaza la copia de prueba de `docs/faq.md` subida a mano) y repetir los cinco botones.
 
 - [ ] **Tú:** pulsar «Sincronizar documentos» en la web como Ponente y ver que muestra el estado sin error (la prueba de `POST` fue por la API, no por el botón).
 - [ ] **Tú:** probar la web en un celular físico (formato de las respuestas, teclado, historial).

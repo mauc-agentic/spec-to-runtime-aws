@@ -27,6 +27,7 @@ Un bloque de código entre pasos (o una línea en blanco) cerraba la lista y el 
   - Para «¿Qué es AIUP?», de los 6 fragmentos que recibe el agente, 3 son de `scripts/` y solo entra `docs/vision.md` (en el puesto 6, con 0,717).
   - Para la pregunta de instalación, `CLAUDE.md` queda en el puesto 11 y solo se recuperan 6; con palabras clave sueltas sale primero.
   - Indexar el código (`scripts/`, `tests/`, `src/`) mete fragmentos que mencionan los mismos términos. Ya estaba anotado como «El código añade ruido a las preguntas de negocio» en `uc-003-sincronizacion.md`; ahora afecta a la primera pregunta de ejemplo.
+- **Segunda ronda (2026-09-24, tras mergear #33 y #34):** la pregunta de instalación siguió fallando (el README entró 8.º) y «¿Qué es AIUP?» empezó a narrar este informe. Se excluyeron las bitácoras del índice y se añadió `docs/faq.md`; los cinco botones y la pregunta de instalación responden bien (esta última 3 de 3 por la API). Detalle en `uc-003-sincronizacion.md`.
 - **Decisión tomada (opción 1):** no indexar `scripts/` ni `tests/`. Aplicado y desplegado el 2026-09-24; la sincronización quitó 16 archivos.
 - **Resultado medido** (`retrieve` y 5 preguntas en el navegador, con la sesión abierta):
   - «¿Qué es AIUP?»: ahora responde «AIUP (AI Unified Process) es un proceso que muestra cómo llevar una especificación hasta un sistema en ejecución en AWS», con fuentes `docs/vision.md` y `CLAUDE.md`.

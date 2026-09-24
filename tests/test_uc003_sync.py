@@ -95,6 +95,17 @@ def test_uc003_br001_tests_and_scripts_are_not_indexed(path):
     assert not decision.include and decision.reason == "tests and scripts are not indexed"
 
 
+@pytest.mark.parametrize("path", sorted(rules.WORK_LOGS))
+def test_uc003_br001_working_logs_are_not_indexed(path):
+    decision = rules.decide(path, 10)
+    assert not decision.include and decision.reason == "working log, not indexed"
+
+
+def test_uc003_br001_other_charla_documents_stay_indexed():
+    assert rules.decide("docs/charla/presupuesto.md", 10).include
+    assert rules.decide("docs/charla/uc-003-sincronizacion.md", 10).include
+
+
 @pytest.mark.parametrize(
     "path",
     [

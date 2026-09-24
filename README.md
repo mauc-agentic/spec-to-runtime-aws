@@ -4,6 +4,7 @@ Repositorio de la charla del **2026-09-26** que documenta paso a paso cómo llev
 
 - `docs/`: artefactos AIUP (visión, requisitos, modelo de entidades, casos de uso).
 - `docs/charla/`: aprendizajes, buenas prácticas y dolores de la charla.
+- `docs/faq.md`: preguntas frecuentes (qué es AIUP, cuánto cuesta la demo, cómo protege las respuestas, perfiles e instalación).
 - `CLAUDE.md`: guía de flujo de trabajo para Claude Code.
 
 ## Cómo instalar las dependencias y correr los tests
