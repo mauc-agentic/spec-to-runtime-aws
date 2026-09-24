@@ -85,3 +85,29 @@ test("texto vacío o nulo no rompe", () => {
   assert.equal(renderMarkdown(""), "");
   assert.equal(renderMarkdown(null), "");
 });
+
+test("una lista numerada interrumpida por un bloque de código conserva la numeración", () => {
+  const html = renderMarkdown("1. Instalar\n```\nuv sync\n```\n2. Probar\n```\nuv run pytest\n```\n3. Listo");
+  assert.match(html, /<ol><li>Instalar<\/li><\/ol>/);
+  assert.match(html, /<ol start="2"><li>Probar<\/li><\/ol>/);
+  assert.match(html, /<ol start="3"><li>Listo<\/li><\/ol>/);
+});
+
+test("una lista numerada con líneas en blanco entre pasos también conserva el número", () => {
+  const html = renderMarkdown("1. Uno\n\n2. Dos");
+  assert.match(html, /<ol start="2"><li>Dos<\/li><\/ol>/);
+});
+
+test("el número de inicio solo puede ser de 1 a 4 dígitos: nada más entra como atributo", () => {
+  const injected = renderMarkdown('7" onmouseover="alert(1). x');
+  assert.doesNotMatch(injected, /<ol/);
+  assert.doesNotMatch(injected, /<[^>]*onmouseover/); // aparece como texto escapado, nunca dentro de una etiqueta
+  const html = renderMarkdown("12345. no es un paso");
+  assert.doesNotMatch(html, /<ol/);
+  assert.match(html, /<p>12345\. no es un paso<\/p>/);
+});
+
+test("las listas normales siguen igual: empiezan en 1 y no llevan atributo start", () => {
+  assert.equal(renderMarkdown("1. a\n2. b"), "<ol><li>a</li><li>b</li></ol>");
+  assert.equal(renderMarkdown("- a\n- b"), "<ul><li>a</li><li>b</li></ul>");
+});

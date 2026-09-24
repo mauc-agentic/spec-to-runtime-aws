@@ -18,6 +18,8 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 
 ## Antes de la charla
 
+- [ ] **Tú (DECIDIR, afecta a la charla): calidad de las respuestas.** «¿Qué es AIUP?», el primer botón de ejemplo, responde que AIUP es «una aplicación» en vez de la metodología, y «¿Cómo instalo las dependencias?» inventa «Python 3.8». Causa medida: el código indexado (`scripts/`, `tests/`) desplaza a `docs/vision.md` y `CLAUDE.md` de los 6 fragmentos que llegan al modelo. Opciones en `pruebas-navegador.md` (no indexar `scripts/` ni `tests/`, o reordenar por ruta, o ambas). Cambiar qué se indexa modifica UC-003 BR-001.
+
 - [ ] **Tú:** pulsar «Sincronizar documentos» en la web como Ponente y ver que muestra el estado sin error (la prueba de `POST` fue por la API, no por el botón).
 - [ ] **Tú:** probar la web en un celular físico (formato de las respuestas, teclado, historial).
 - [ ] **Tú:** probar la web con un lector de pantalla.
@@ -33,7 +35,9 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 
 - [ ] **Tú:** revisar TC-001 (`Draft` → `Reviewed` / `Approved`).
 - [ ] **Tú:** decidir sobre UC-008 (búsqueda en la documentación de AWS) o enmendar UC-004 BR-003.
-- [ ] **Yo:** pruebas de navegador para UC-002 (perfil), UC-004 BR-009 (formato en celular) y UC-001 A2/A6 (mensajes de error). Hoy la web solo tiene tests de sus módulos puros.
+- [x] Pruebas de navegador en vivo de UC-002 y UC-004 BR-009 (2026-09-24): ver `pruebas-navegador.md`. Encontraron y corrigieron un defecto de numeración de listas.
+- [ ] **Tú, con el asistente mirando:** UC-001 A2 (contraseña incorrecta): cierra sesión, escribe una contraseña equivocada y el asistente captura el mensaje. UC-001 A6 exige crear cuentas y no se hace.
+- [ ] **Automatizar** esas pruebas de navegador (Playwright, con el API y Cognito simulados); hoy la web solo tiene tests de sus módulos puros.
 - [ ] **Yo:** automatizar TC-001 (depende de lo anterior y de que el login pueda hacerse sin que yo escriba contraseñas; ver el aprendizaje en `huecos-a4.md`).
 - [ ] **Yo:** test de UC-005 A3/BR-001 (ventana de 10 interacciones; hoy es solo configuración).
 - [ ] **Tú o yo:** provocar un fallo real de AgentCore Memory para UC-005 A4 (hoy solo con la memoria simulada).
