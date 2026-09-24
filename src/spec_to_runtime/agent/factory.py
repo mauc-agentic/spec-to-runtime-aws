@@ -8,10 +8,13 @@ from bedrock_agentcore.memory.integrations.strands.session_manager import (
 from strands import Agent, tool
 from strands.agent.conversation_manager import SlidingWindowConversationManager
 from strands.models import BedrockModel
+from strands.types.tools import ToolContext
 
 from spec_to_runtime.agent import analytics, retrieval
 from spec_to_runtime.agent.config import Settings
 from spec_to_runtime.agent.profiles import Profile, Role, system_prompt
+
+REPORT_KEY = "report"  # estado del agente donde `top_preguntas` deja el informe final
 
 # El análisis agrupa cientos de preguntas y devuelve identificadores: necesita más salida.
 _ANALYSIS_MAX_TOKENS = 6000
@@ -29,6 +32,19 @@ def make_model(settings: Settings, max_tokens: int | None = None) -> BedrockMode
         guardrail_stream_processing_mode="sync",
         guardrail_latest_message=True,
     )
+
+
+def mask_with_guardrail(client, settings: Settings, text: str) -> str:
+    """Pasa un texto por el guardrail: enmascara correos y teléfonos y bloquea claves de AWS."""
+    response = client.apply_guardrail(
+        guardrailIdentifier=settings.guardrail_id,
+        guardrailVersion=settings.guardrail_version,
+        source="OUTPUT",
+        content=[{"text": {"text": text}}],
+    )
+    if response.get("action") == "GUARDRAIL_INTERVENED" and response.get("outputs"):
+        return response["outputs"][0]["text"]
+    return text
 
 
 def make_classifier(settings: Settings):
@@ -49,6 +65,7 @@ def make_classifier(settings: Settings):
 def speaker_tools(settings: Settings):
     """Herramientas solo para el Ponente (UC-007 BR-001). Los participantes no las reciben."""
     kb_client = boto3.client("bedrock-agent-runtime", region_name=settings.region)
+    guard_client = boto3.client("bedrock-runtime", region_name=settings.region)
     table = boto3.resource("dynamodb", region_name=settings.region).Table(settings.requests_table)
     classify = make_classifier(settings)
 
@@ -64,16 +81,23 @@ def speaker_tools(settings: Settings):
         )
         return retrieval.build_context(passages, settings.repo_url) or "Sin resultados."
 
-    @tool
-    def top_preguntas(periodo_horas: int = 0) -> str:
+    @tool(context="tool_context")
+    def top_preguntas(tool_context: ToolContext, periodo_horas: int = 0) -> str:
         """Devuelve el top 10 de preguntas más frecuentes de los participantes.
 
         Args:
+            tool_context: Inyectado por el framework; no lo rellena el modelo.
             periodo_horas: Horas hacia atrás a analizar; 0 significa todo el evento.
         """
-        return analytics.top_questions_report(
+        report = analytics.top_questions_report(
             table=table, classify=classify, period_hours=periodo_horas
         )
+        report = mask_with_guardrail(guard_client, settings, report)  # UC-007 BR-005 y BR-009
+        # El informe se muestra tal cual: si el modelo lo reescribe, puede inventar el resumen
+        # (ya inventó que "ninguna pregunta tenía fuente"). Se corta el bucle y lo emite el handler.
+        tool_context.agent.state.set(REPORT_KEY, report)
+        tool_context.invocation_state.setdefault("request_state", {})["stop_event_loop"] = True
+        return report
 
     return [buscar_documentos, top_preguntas]
 
