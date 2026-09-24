@@ -9,7 +9,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 | UC | Estado | Resumen |
 |---|---|---|
 | UC-001 Autenticarse | Implemented | Cubierto; spec ajustada a Cognito el 2026-09-24 (bloqueo y contraseña) |
-| UC-002 Elegir perfil | Implemented | Cubierto; spec ajustada (General por defecto) y sin tests de la web |
+| UC-002 Elegir perfil | Implemented | Cubierto; spec ajustada (General por defecto); verificado en un navegador real el 2026-09-24 (sin pruebas automáticas de la web) |
 | UC-003 Sincronizar documentos | Implemented | El mejor cubierto; el `POST` con cambios se probó el 2026-09-24 (a mano, por la API y sin navegador) |
 | UC-004 Consultar al agente | Implemented | Muy cubierto; A4 y la deriva de A1 cerradas el 2026-09-24 |
 | UC-005 Continuar conversación | Implemented | Cubierto; A4 cerrado el 2026-09-24 (con un límite: ver abajo) |
@@ -38,7 +38,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 - **Cubierto:** flujo principal, A2, A3, A5, A6, A7, A8, BR-001, BR-002, BR-003, BR-004, BR-005, BR-006, BR-007, BR-008 y BR-010 (33 tests, verificación con Nova 2 Lite y la Knowledge Base reales, trazas y cuotas).
 - **Cubierto, A4 (datos personales en la pregunta):** la API enmascara correos y teléfonos (`{EMAIL}`, `{PHONE}`) antes de guardar y de encolar, cuenta la consulta y avisa en la web, que además muestra la pregunta ya enmascarada (tests de `common/privacy.py` y de la API, y la prueba de humo). Alcance: solo correos y teléfonos, los tipos que el guardrail ya anonimiza; otros datos personales (nombres, direcciones) no se detectan. Ver `docs/charla/huecos-a4.md`.
 - **Deriva resuelta, A1 (sesión vencida):** al vencer la sesión al enviar, la pregunta escrita vuelve al cuadro cuando se entra con la misma cuenta (nunca con otra). Comprobado en un navegador real con un 401 simulado; el vencimiento real del token no se ha probado.
-- **Sin test:** BR-009 (formato legible en celular): se comprobó a mano, no hay test de la interfaz.
+- **BR-009 (formato en celular):** verificado en un navegador real el 2026-09-24 hasta 606 px y con el contenedor a 390 px (sin desborde); encontró y corrigió un defecto de numeración de listas. Falta el celular físico y no hay test automático de la interfaz.
 
 ### UC-005 Continuar una conversación
 - **Cubierto:** flujo principal, A1, A2, BR-002, BR-003, BR-004, BR-005 (2 tests, memoria real comprobada con dos turnos y eventos guardados en AgentCore).
