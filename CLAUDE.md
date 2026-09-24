@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `spec-to-runtime-aws` es el repositorio de una charla: documenta paso a paso cómo llevar una especificación hasta un runtime en AWS, incluyendo temas de interés, buenas prácticas y dolores vividos, y sirve como base de las demos. Todo se hace con **AIUP (AI Unified Process, https://unifiedprocess.ai)**: la especificación es la fuente de verdad y el código se deriva de ella.
 
-**Stack:** Python + Strands Agents (framework de agentes de AWS), ejecutado en Bedrock AgentCore, con API Gateway, Lambda, SQS, CloudWatch y Secrets Manager. Toda la infraestructura va como IaC con **Terraform** (decisión en `docs/charla/iac-terraform.md`). Fecha de la charla: **2026-09-26**.
+**Stack:** Python 3.14 + Strands Agents (framework de agentes de AWS), ejecutado en Bedrock AgentCore con el modelo **Amazon Nova 2 Lite** (`us.amazon.nova-2-lite-v1:0`, región `us-east-1`), con API Gateway, Lambda, SQS, CloudWatch y Secrets Manager. Toda la infraestructura va como IaC con **Terraform** (decisión en `docs/charla/iac-terraform.md`). Fecha de la charla: **2026-09-26**.
 
 Plugins de Claude Code: `aiup-core` (documentación AIUP, independiente del stack) y `aws-agents` (skills `agents-get-started`, `agents-build`, `agents-deploy`, `agents-debug`, etc. para AgentCore). `aws-agents` (marketplace `aws/agent-toolkit-for-aws`) ya está instalado y habilitado en `.claude/settings.json`. `aiup-vaadin-jooq` **no aplica** a este stack y está deshabilitado en `.claude/settings.json`: no uses `/implement`, `/flyway-migration` ni los skills de tests Vaadin/Hilla. El código aún no existe; no asumas nada más allá de lo que esté en el repo o en las specs aprobadas.
 
@@ -17,7 +17,7 @@ Plugins de Claude Code: `aiup-core` (documentación AIUP, independiente del stac
 ## Reglas obligatorias del flujo de trabajo
 
 1. **Todo spec nuevo o UC nuevo va en una rama NUEVA** (p. ej. `uc-001-nombre`, `spec/requirements`, `tc-001-nombre`). Nunca se trabaja directo en `main`.
-2. **Merge a `main` solo al final**: cuando la implementación, las pruebas y los tests estén completos y certificados (`/coverage-check` sin gaps ni drift, tests en verde, estado del UC/TC actualizado). No hagas merge ni push sin que el usuario lo pida.
+2. **Merge a `main` solo al final**: cuando la implementación, las pruebas y los tests estén completos y certificados (`/coverage-check` sin gaps ni drift, tests en verde, estado del UC/TC actualizado). No hagas merge ni push sin que el usuario lo pida. `main` está protegido (ruleset `protect-main`): solo entra por PR con squash merge, commits firmados y CI en verde; el dueño es el único que mergea. Detalle en `docs/charla/proteccion-repo.md`. Si apilas PRs, cambia la base del segundo a `main` antes de mergear el primero.
 3. **Todo se documenta y el spec se mantiene al día.** Si cambia el código, un test o una decisión, se actualiza en el mismo cambio el documento AIUP correspondiente (`Status` del UC/TC, entity model, diagrama, requisitos). Código y spec nunca deben divergir.
 4. **Los aprendizajes de la charla se registran mientras ocurren**: pasos seguidos, buenas prácticas y dolores/problemas vividos se documentan en el momento en que se descubren, no al final. Ubicación: `docs/charla/` (crearla si no existe; un archivo por tema, en español).
 

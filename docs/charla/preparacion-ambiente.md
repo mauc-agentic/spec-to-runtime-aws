@@ -7,6 +7,8 @@
 - **Python:** única versión **3.14** (`.python-version` + `requires-python`); proyecto `uv` (`pyproject.toml`) con `strands-agents` y `bedrock-agentcore`; dev: `pytest`, `ruff`.
 - **Plugins:** `aws-agents` viene del marketplace `aws/agent-toolkit-for-aws` (`claude plugin marketplace add aws/agent-toolkit-for-aws`), instalado con scope project.
 
+- **Modelo:** Amazon Nova 2 Lite (`us.amazon.nova-2-lite-v1:0`, perfil de inferencia en `us-east-1`; viene activo por defecto). Verificado con una llamada real a `bedrock-runtime converse`. El MCP `strands-agents` también se probó (`search_docs` responde).
+
 ## Bootstrap del state (huevo y gallina)
 
 El bucket del state no puede crearse con el state que aloja. `infra/bootstrap/` usa state local y se aplica una sola vez; luego `infra/` usa el backend S3. El state local del bootstrap no se versiona.
