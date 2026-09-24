@@ -11,6 +11,7 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 - [x] Prueba de humo reintenta una vez la búsqueda en la documentación de AWS (#28).
 - [x] `POST /admin/sync` con cambios probado por la API (13,2 s, 11 nuevos y 28 modificados).
 - [x] Falla de ingesta de los `scripts/*.py` (shebang) arreglada: 0 fallidos y los 4 `INDEXED`.
+- [x] Las fuentes de la documentación de AWS salen siempre al final de la respuesta del Ponente (antes dependían de que el modelo las citara); prueba de humo 15/15 sin necesitar el reintento.
 - [x] `main` validado tras los merges: tests, lint, Terraform sin desvío, checkov, validador de UC y CI en verde.
 
 ## Antes de la charla
@@ -40,7 +41,7 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 - [ ] Vencimiento real del token (el 401 se simuló).
 - [ ] Cuántos intentos fallidos y cuánto dura el bloqueo real de Cognito (UC-001 A3 no promete cifras).
 - [ ] Contenido malicioso en los fragmentos del servidor MCP de AWS (inyección de prompt); hoy solo hay mitigaciones de diseño.
-- [ ] Causa de la falla intermitente de la búsqueda en la documentación de AWS (mitigada con un reintento; los spans de esa ejecución no aparecieron).
+- [ ] Causa completa de la falla intermitente de la búsqueda en la documentación de AWS: se arregló la parte de las URL sin citar y se mantiene el reintento, pero no se confirmó si hubo otras causas (los spans de aquella ejecución no aparecieron).
 
 ## Opcional
 
