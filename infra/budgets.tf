@@ -1,5 +1,4 @@
-# NFR-012 / NFR-014: presupuesto de 50 USD con alertas. La cuenta aloja otros proyectos,
-# por eso el presupuesto se filtra por la etiqueta `project` (default_tags del provider).
+# NFR-012 / NFR-014: presupuesto de 50 USD con alertas y corte automático (budget_action.tf).
 #
 # La etiqueta de costo solo existe en Facturación después de que haya recursos etiquetados
 # (hasta 24 h). Hasta entonces `activate_cost_allocation_tag` queda en false, y el
@@ -18,9 +17,14 @@ resource "aws_budgets_budget" "project" {
   limit_unit   = "USD"
   time_unit    = "MONTHLY"
 
-  cost_filter {
-    name   = "TagKeyValue"
-    values = ["user:project$spec-to-runtime-aws"]
+  # Con la etiqueta de costo aún sin activar el filtro no ve gasto: por defecto el presupuesto
+  # cubre toda la cuenta (hoy sin otros proyectos gastando). Se acota por etiqueta al activarla.
+  dynamic "cost_filter" {
+    for_each = var.budget_filter_by_tag ? [1] : []
+    content {
+      name   = "TagKeyValue"
+      values = ["user:project$spec-to-runtime-aws"]
+    }
   }
 
   dynamic "notification" {

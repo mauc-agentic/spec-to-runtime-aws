@@ -1,5 +1,6 @@
 import { ApiError, createApi } from "./api.js";
 import * as cognito from "./cognito.js";
+import { describeFailure } from "./errors.js";
 import { renderMarkdown } from "./markdown.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -268,8 +269,10 @@ async function ask(prompt, existing) {
     if (sent.context_expired) toast("Pasaron más de 24 horas desde tu última pregunta: empecé una conversación nueva.");
     const data = await follow(message, sent.request_id);
     if (data?.status === "Failed") {
-      fail(message, "No se pudo completar la respuesta. Esta pregunta no se descontó de tu límite: inténtalo de nuevo.", () => ask(prompt, message));
+      const failure = describeFailure(data);
+      fail(message, failure.text, failure.retry ? () => ask(prompt, message) : null);
     }
+
   } catch (error) {
     fail(message, explain(error), error.status === 429 ? null : () => ask(prompt, message));
   } finally {
@@ -337,7 +340,7 @@ async function loadSession(sessionId) {
         // UC-006 A3: la respuesta sigue en curso; se muestra lo escrito hasta ahora y se completa sola.
         follow(message, item.request_id).catch(() => fail(message, "No se pudo completar esta respuesta.", null));
       } else if (item.status === "Failed") {
-        fail(message, "Esta respuesta no se pudo completar.", null);
+        fail(message, describeFailure(item).text, null);
       }
     }
     scrollToEnd(true);
