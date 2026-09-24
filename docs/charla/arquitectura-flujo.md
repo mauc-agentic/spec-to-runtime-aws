@@ -1,6 +1,6 @@
 # Arquitectura del flujo y latencia percibida
 
-Estado: **propuesta**, pendiente de confirmar por el autor antes de la spec de UC-004.
+Estado: **decidido el 2026-09-24** — el autor eligió la **opción C (polling con avance parcial)**. Spec de UC-004 en `docs/use_cases/UC-004-consultar-al-agente-sobre-el-repositorio.md`.
 
 ## Flujo pedido por el autor
 
@@ -17,6 +17,15 @@ La cola no es el problema: SQS y el disparo de Lambda suman décimas de segundo.
 | A. Polling | El navegador consulta `GET /respuestas/{id}` cada ~1 s; la Lambda guarda el resultado en DynamoDB | Simple, sin servicios nuevos | Añade hasta 1 s y hace muchas llamadas |
 | B. WebSocket (API Gateway) | La Lambda empuja la respuesta a la conexión | Entrega inmediata | Más piezas (conexiones, rutas) y más riesgo en 3 días |
 | **C. Polling con avance parcial (recomendada)** | Como A, pero la Lambda va escribiendo el texto que recibe del agente y el navegador lo muestra creciendo, con estados (En cola, Buscando, Redactando) | Se siente como streaming, funciona con Lambda en Python, sin servicios nuevos | Necesita que el agente entregue el texto por partes |
+
+## Decisión y consecuencias
+
+Se usa la opción C. Consecuencias que la spec de UC-004 (BR-004 y BR-007) ya recoge:
+
+- **Texto visible solo tras pasar los guardrails.** Mostrar el texto por partes obliga a revisar la salida por partes antes de escribirla en DynamoDB; si no, el participante vería texto que después se bloquea. Es un coste de latencia y de unidades de guardrails a validar con una medición (NFR-010, NFR-012).
+- **Tres estados visibles** (En cola, Buscando, Redactando) desde los primeros 2 segundos, que es lo que cubre NFR-011 incluso cuando el modelo tarda.
+- **Si el participante cierra la página,** la respuesta se sigue generando y queda en el historial (A8 de UC-004; UC-006).
+- **Tiempo máximo de 60 s** por solicitud; superado, se marca como fallida y no consume cuota.
 
 ## Cómo bajar la espera percibida (sin abandonar el flujo)
 
