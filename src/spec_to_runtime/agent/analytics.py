@@ -6,6 +6,7 @@ porcentajes y el orden los calcula el código, para que las cifras sean exactas
 """
 
 import json
+from collections import Counter
 from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
@@ -56,17 +57,19 @@ def local_days(start: datetime, end: datetime) -> list[str]:
     return [(first + timedelta(days=i)).isoformat() for i in range((last - first).days + 1)]
 
 
-def fetch_questions(table, since: datetime | None, now: datetime | None = None) -> list[Question]:
-    """Preguntas de participantes ya respondidas, en orden cronológico (índice by_day)."""
+def fetch_rows(
+    table, since: datetime | None, now: datetime | None = None, statuses=("Completed",)
+) -> list[dict]:
+    """Consultas de participantes en orden cronológico (índice by_day), como máximo las últimas 1.000."""
     now = now or datetime.now(UTC)
     start = since or now - timedelta(days=30)
-    days = local_days(start, now)
     rows = []
-    for day in days:
+    for day in local_days(start, now):
         kwargs = {
             "IndexName": "by_day",
             "KeyConditionExpression": Key("day").eq(day) & Key("created_at").gte(start.isoformat()),
-            "FilterExpression": Attr("role").eq("Participant") & Attr("status").eq("Completed"),
+            "FilterExpression": Attr("role").eq("Participant")
+            & Attr("status").is_in(list(statuses)),
         }
         while True:
             page = table.query(**kwargs)
@@ -75,7 +78,12 @@ def fetch_questions(table, since: datetime | None, now: datetime | None = None) 
                 break
             kwargs["ExclusiveStartKey"] = page["LastEvaluatedKey"]
     rows.sort(key=lambda r: r["created_at"])
-    rows = rows[-MAX_QUESTIONS:]
+    return rows[-MAX_QUESTIONS:]
+
+
+def fetch_questions(table, since: datetime | None, now: datetime | None = None) -> list[Question]:
+    """Preguntas de participantes ya respondidas, numeradas para que el modelo las agrupe."""
+    rows = fetch_rows(table, since, now)
     return [
         Question(
             i, str(r["prompt"])[:QUESTION_LIMIT], bool(r.get("no_source", False)), r["created_at"]
@@ -156,3 +164,50 @@ def top_questions_report(
     listing = "\n".join(f"{q.id}. {q.text}" for q in questions)
     grouped = parse_topics(classify(_CLASSIFY_PROMPT.format(questions=listing)), questions)
     return format_report(rank_topics(grouped, len(questions)), len(questions), period)
+
+
+PROFILE_NAMES = {"Basic": "Básico", "Technical": "Técnico", "General": "General"}
+TOP_PARTICIPANTS = 5
+
+
+def hour_label(hour: int) -> str:
+    return f"{hour % 12 or 12} {'a. m.' if hour < 12 else 'p. m.'}"
+
+
+def activity_report(*, table, period_hours: int = 0, now: datetime | None = None) -> str:
+    """Resumen de actividad de los participantes, siempre anónimo (UC-007 BR-005 y BR-011).
+
+    Nunca muestra quién preguntó: los participantes más activos salen como "Participante 1, 2...".
+    Todo se calcula en código, sin llamar al modelo, así que las cifras son exactas.
+    """
+    now = now or datetime.now(UTC)
+    since = now - timedelta(hours=period_hours) if period_hours > 0 else None
+    period = f"últimas {period_hours} horas" if since else "todo el evento hasta ahora"
+    rows = fetch_rows(table, since, now, statuses=("Completed", "Blocked"))
+    if not rows:
+        return (
+            "No encontré preguntas de participantes en ese periodo. "
+            "Las preguntas del ponente no cuentan. Prueba con un periodo más amplio."
+        )
+    total = len(rows)
+    per_user = Counter(r["user_id"] for r in rows)
+    hours = Counter(datetime.fromisoformat(r["created_at"]).astimezone(LOCAL_TZ).hour for r in rows)
+    peak_hour, peak_count = max(hours.items(), key=lambda item: (item[1], item[0]))
+    profiles = Counter(r.get("profile", "General") for r in rows)
+    lines = [
+        f"**Actividad de los participantes** · {period}",
+        "",
+        f"- {total} preguntas de {len(per_user)} participantes ({total / len(per_user):.1f} por participante)",
+        f"- Hora con más actividad: {hour_label(peak_hour)} ({peak_count} preguntas)",
+        "- Perfiles elegidos: "
+        + ", ".join(f"{PROFILE_NAMES.get(p, p)} {n}" for p, n in profiles.most_common()),
+        f"- {sum(bool(r.get('no_source')) for r in rows)} sin fuente en el repositorio",
+        f"- {sum(r.get('status') == 'Blocked' for r in rows)} bloqueadas por los guardrails",
+        "",
+        "**Participantes más activos** (anónimos: no se muestra quién es)",
+    ]
+    for position, (_, count) in enumerate(per_user.most_common(TOP_PARTICIPANTS), start=1):
+        lines.append(
+            f"{position}. Participante {position} — {count} preguntas ({count / total * 100:.0f} %)"
+        )
+    return "\n".join(lines)

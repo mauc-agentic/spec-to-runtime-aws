@@ -112,3 +112,61 @@ def test_uc007_the_search_uses_the_local_day_not_the_utc_day():
 def test_uc007_a5_the_empty_notice_explains_that_the_speakers_own_questions_do_not_count():
     report = analytics.top_questions_report(table=FakeTable([]), classify=lambda _p: "{}", now=NOW)
     assert "preguntas del ponente no cuentan" in report
+
+
+def _activity_rows():
+    # u1 pregunta 4 veces, u2 dos, u3 una; una bloqueada, una sin fuente; tres perfiles.
+    spec = [
+        ("secreto-u1", "Basic", "Completed", False, 10), ("secreto-u1", "Basic", "Completed", True, 11),
+        ("secreto-u1", "Technical", "Completed", False, 12), ("secreto-u1", "Basic", "Blocked", False, 13),
+        ("secreto-u2", "General", "Completed", False, 14), ("secreto-u2", "General", "Completed", False, 15),
+        ("secreto-u3", "Technical", "Completed", False, 16),
+    ]  # fmt: skip
+    return [
+        {"user_id": u, "prompt": f"pregunta {i}", "profile": p, "status": st, "no_source": ns,
+         "created_at": f"2026-09-26T{h}:00:00+00:00", "day": "2026-09-26"}
+        for i, (u, p, st, ns, h) in enumerate(spec)
+    ]  # fmt: skip
+
+
+def test_uc007_activity_report_has_exact_numbers():
+    report = analytics.activity_report(table=FakeTable(_activity_rows()), period_hours=6, now=NOW)
+    assert "7 preguntas de 3 participantes (2.3 por participante)" in report
+    assert "1. Participante 1 — 4 preguntas (57 %)" in report
+    assert "2. Participante 2 — 2 preguntas (29 %)" in report
+    assert "3. Participante 3 — 1 preguntas (14 %)" in report
+    assert "Perfiles elegidos: Básico 3, Técnico 2, General 2" in report
+    assert (
+        "1 sin fuente en el repositorio" in report and "1 bloqueadas por los guardrails" in report
+    )
+
+
+def test_uc007_br005_activity_report_never_reveals_who_asked():
+    report = analytics.activity_report(table=FakeTable(_activity_rows()), period_hours=6, now=NOW)
+    assert "secreto-" not in report and "u1" not in report.replace("Participante 1", "")
+    assert "anónimos" in report
+
+
+def test_uc007_activity_report_names_the_busiest_hour_in_local_time():
+    rows = _activity_rows()  # 10..16 UTC = 5 a. m. .. 11 a. m. en Colombia, una pregunta por hora
+    for row in rows[:3]:
+        row["created_at"] = (
+            "2026-09-26T13:30:00+00:00"  # tres a las 8:30 a. m. locales (más la de las 13:00 UTC)
+        )
+    report = analytics.activity_report(table=FakeTable(rows), period_hours=6, now=NOW)
+    assert "Hora con más actividad: 8 a. m. (4 preguntas)" in report
+
+
+def test_uc007_activity_report_with_no_questions_explains_it():
+    report = analytics.activity_report(table=FakeTable([]), now=NOW)
+    assert "preguntas del ponente no cuentan" in report
+
+
+def test_uc007_hour_label_uses_the_12_hour_clock():
+    assert [analytics.hour_label(h) for h in (0, 8, 12, 15, 23)] == [
+        "12 a. m.",
+        "8 a. m.",
+        "12 p. m.",
+        "3 p. m.",
+        "11 p. m.",
+    ]

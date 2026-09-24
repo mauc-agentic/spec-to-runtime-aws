@@ -99,7 +99,22 @@ def speaker_tools(settings: Settings):
         tool_context.invocation_state.setdefault("request_state", {})["stop_event_loop"] = True
         return report
 
-    return [buscar_documentos, top_preguntas]
+    @tool(context="tool_context")
+    def actividad_participantes(tool_context: ToolContext, periodo_horas: int = 0) -> str:
+        """Resumen anónimo de la actividad: cuántas preguntas y participantes hay, quién ha preguntado
+        más (sin decir quién es), la hora con más actividad y los perfiles elegidos.
+
+        Args:
+            tool_context: Inyectado por el framework; no lo rellena el modelo.
+            periodo_horas: Horas hacia atrás a analizar; 0 significa todo el evento.
+        """
+        report = analytics.activity_report(table=table, period_hours=periodo_horas)
+        report = mask_with_guardrail(guard_client, settings, report)
+        tool_context.agent.state.set(REPORT_KEY, report)
+        tool_context.invocation_state.setdefault("request_state", {})["stop_event_loop"] = True
+        return report
+
+    return [buscar_documentos, top_preguntas, actividad_participantes]
 
 
 def build_agent(

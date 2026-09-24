@@ -91,6 +91,15 @@
 2. System records the request as failed and does not count it in the daily usage.
 3. Use case continues at step 2 if the Ponente retries, or ends.
 
+### A8: Activity Summary Requested
+
+**Trigger:** Ponente asks how much the audience has taken part instead of which topics were asked (step 1)  
+**Flow:**
+
+1. System gathers the questions that participants asked in the requested period.
+2. System shows the number of questions and participants, the busiest hour, the profiles chosen and the most active participants without saying who they are.
+3. Use case ends.
+
 ## Postconditions
 
 ### Success Postconditions
@@ -148,3 +157,7 @@ The report is checked by the same content rules as an answer to a participant, a
 ### BR-010: Traceability
 
 Every request receives an identifier that appears in the operation records, so it can be followed from submission to report.
+
+### BR-011: Activity Summary
+
+The activity summary shows the number of questions and participants, the average per participant, the busiest hour in Colombia time, the profiles chosen, how many questions found no source and how many were blocked. The most active participants, up to five, appear as "Participante 1", "Participante 2" and so on by rank. It never shows a name, an email address or an identifier (see BR-005). When the Ponente asks who a participant is, the system explains that the reports do not identify anyone and offers the anonymous summary or the top of questions.
