@@ -23,7 +23,7 @@ export function renderMarkdown(source) {
   const lines = escapeHtml(source ?? "").replace(/\r\n?/g, "\n").split("\n");
   const html = [];
   let paragraph = [];
-  let list = null; // { tag: "ul" | "ol", items: [] }
+  let list = null; // { tag: "ul" | "ol", items: [], start: número del primer paso }
   let fence = null; // líneas del bloque de código
 
   const flushParagraph = () => {
@@ -31,7 +31,11 @@ export function renderMarkdown(source) {
     paragraph = [];
   };
   const flushList = () => {
-    if (list) html.push(`<${list.tag}>${list.items.map((i) => `<li>${inline(i)}</li>`).join("")}</${list.tag}>`);
+    if (list) {
+      // Una lista interrumpida (por un bloque de código o una línea en blanco) sigue con su número.
+      const start = list.tag === "ol" && list.start !== 1 ? ` start="${list.start}"` : "";
+      html.push(`<${list.tag}${start}>${list.items.map((i) => `<li>${inline(i)}</li>`).join("")}</${list.tag}>`);
+    }
     list = null;
   };
 
@@ -51,7 +55,7 @@ export function renderMarkdown(source) {
     }
     const heading = line.match(/^(#{1,4})\s+(.+)$/);
     const bullet = line.match(/^\s*[-*]\s+(.+)$/);
-    const ordered = line.match(/^\s*\d+[.)]\s+(.+)$/);
+    const ordered = line.match(/^\s*(\d{1,4})[.)]\s+(.+)$/);
     const quote = line.match(/^&gt;\s?(.*)$/);
     if (heading) {
       flushParagraph();
@@ -67,9 +71,9 @@ export function renderMarkdown(source) {
       const tag = bullet ? "ul" : "ol";
       if (!list || list.tag !== tag) {
         flushList();
-        list = { tag, items: [] };
+        list = { tag, items: [], start: ordered ? Number(ordered[1]) : 1 };
       }
-      list.items.push((bullet || ordered)[1]);
+      list.items.push(bullet ? bullet[1] : ordered[2]);
     } else if (quote) {
       flushParagraph();
       flushList();
