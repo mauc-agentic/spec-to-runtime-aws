@@ -11,6 +11,7 @@ class Settings:
     guardrail_version: str
     requests_table: str
     memory_id: str = ""
+    gateway_url: str = ""  # AgentCore Gateway con las herramientas del Ponente (FR-012)
     region: str = "us-east-1"
     model_id: str = "us.amazon.nova-2-lite-v1:0"
     repo_url: str = "https://github.com/mauc-agentic/spec-to-runtime-aws/blob/main"
@@ -33,6 +34,7 @@ class Settings:
             guardrail_version=env["GUARDRAIL_VERSION"],
             requests_table=env["REQUESTS_TABLE"],
             memory_id=env.get("MEMORY_ID", ""),
+            gateway_url=env.get("GATEWAY_URL", ""),
             region=env.get("AWS_REGION", "us-east-1"),
             model_id=env.get("MODEL_ID", cls.model_id),
             min_relevance=float(env.get("MIN_RELEVANCE", cls.min_relevance)),

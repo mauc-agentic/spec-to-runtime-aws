@@ -149,13 +149,11 @@ resource "aws_iam_role_policy" "agent" {
         Resource = "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:*"
       },
       {
-        Sid    = "TopQuestions"
-        Effect = "Allow"
-        Action = ["dynamodb:Query"]
-        Resource = [
-          aws_dynamodb_table.requests.arn,
-          "${aws_dynamodb_table.requests.arn}/index/by_day",
-        ]
+        # FR-012: las herramientas del Ponente se ejecutan en el Gateway; el agente ya no lee DynamoDB.
+        Sid      = "Gateway"
+        Effect   = "Allow"
+        Action   = ["bedrock-agentcore:InvokeGateway"]
+        Resource = aws_bedrockagentcore_gateway.tools.gateway_arn
       },
     ]
   })
@@ -191,6 +189,7 @@ resource "aws_bedrockagentcore_agent_runtime" "agent" {
     GUARDRAIL_VERSION = aws_bedrock_guardrail_version.agent.version
     REQUESTS_TABLE    = aws_dynamodb_table.requests.name
     MEMORY_ID         = aws_bedrockagentcore_memory.agent.id
+    GATEWAY_URL       = aws_bedrockagentcore_gateway.tools.gateway_url
   }
 
   # Las sesiones inactivas liberan su microVM pronto: solo se paga el uso (NFR-012).

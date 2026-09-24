@@ -1,5 +1,5 @@
 # NFR-014: al llegar al 90 % del presupuesto, AWS Budgets adjunta una política que NIEGA invocar
-# modelos, guardrails, la Knowledge Base y el Runtime a los roles del agente y del orquestador.
+# modelos, guardrails, la Knowledge Base y el Runtime a los roles del agente, del orquestador y de las herramientas.
 #
 # Importante: Facturación tiene un retraso de 8 a 24 horas, así que esto es la red de seguridad de
 # último recurso, no una protección en tiempo real. La protección en tiempo real son las cuotas de
@@ -30,11 +30,11 @@ resource "aws_iam_policy" "budget_cutoff" {
 }
 
 locals {
-  cutoff_roles = [aws_iam_role.agent.name, aws_iam_role.orchestrator.name]
+  cutoff_roles = [aws_iam_role.agent.name, aws_iam_role.orchestrator.name, aws_iam_role.tools.name]
 }
 
 # Rol que asume AWS Budgets para adjuntar la política; solo puede adjuntar y quitar ESA política
-# a ESOS dos roles.
+# a ESOS tres roles.
 resource "aws_iam_role" "budget_action" {
   name = "${local.name}-budget-action"
 
@@ -58,7 +58,7 @@ resource "aws_iam_role_policy" "budget_action" {
     Statement = [{
       Effect   = "Allow"
       Action   = ["iam:AttachRolePolicy", "iam:DetachRolePolicy"]
-      Resource = [aws_iam_role.agent.arn, aws_iam_role.orchestrator.arn]
+      Resource = [aws_iam_role.agent.arn, aws_iam_role.orchestrator.arn, aws_iam_role.tools.arn]
       Condition = {
         StringEquals = { "iam:PolicyARN" = aws_iam_policy.budget_cutoff.arn }
       }

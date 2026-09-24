@@ -210,7 +210,7 @@ def test_uc007_the_report_is_shown_verbatim_and_not_rewritten_by_the_model():
 
 
 def test_uc007_br005_the_report_goes_through_the_guardrail_before_being_shown():
-    from spec_to_runtime.agent.factory import mask_with_guardrail
+    from spec_to_runtime.agent.toolkit import mask_with_guardrail
 
     client = MagicMock()
     client.apply_guardrail.return_value = {
