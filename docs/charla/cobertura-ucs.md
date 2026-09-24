@@ -62,7 +62,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 | FR-002, FR-003, FR-010, FR-011, FR-013 a FR-016, FR-018 a FR-023 | Implementado | Ver los UC |
 | FR-017 (herramientas solo para el Ponente) | Implementado | El rol sale del token; los participantes no reciben las herramientas |
 | **FR-012 (herramientas por AgentCore Gateway)** | **Parcial** | Las tres herramientas del Ponente se ejecutan detrás de Gateway (target Lambda, verificado con la prueba de humo). Falta el **target de servidor MCP de AWS** que menciona el requisito: ver `docs/charla/agentcore-gateway.md` |
-| FR-001, FR-004 | Parcial | Falta el caso de prueba TC-001 y una reproducción desde un clon limpio |
+| FR-001, FR-004 | Parcial | TC-001 escrito (`Draft`, sin automatizar); falta una reproducción desde un clon limpio |
 | FR-005 a FR-007, FR-009 | Implementado | `docs/charla/` y el flujo por ramas y PR |
 | FR-008 (trazabilidad spec-código) | Parcial | Esta auditoría es la primera; falta cerrar los huecos |
 | NFR-005, NFR-006, NFR-007, NFR-008, NFR-009, NFR-010, NFR-012, NFR-013, NFR-014 | Implementado | Medidos o probados; ver `docs/charla/` |
@@ -73,7 +73,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 ## Pendiente, por prioridad para la charla (2026-09-26)
 
 1. **AgentCore Gateway (FR-012):** el target Lambda está hecho; decidir si se añade un target de servidor MCP de AWS o se enmienda el requisito para dejar solo Lambda.
-2. **TC-001:** el caso de prueba de punta a punta que encadena UC-001, UC-004, UC-005, UC-006 y UC-007.
+2. ~~**TC-001**~~ Escrito en `docs/test_cases/TC-001-conversacion-y-analisis-del-ponente.md` (`Draft`, falta la revisión del autor). Sigue sin automatizarse: la web no tiene pruebas de navegador.
 3. Cerrar los **huecos de UC-004 A4, UC-005 A4 y UC-006 A4**, o dejarlos como alcance declarado.
 4. Decidir las **derivas** (UC-001 A3/BR-005, UC-002 A1, UC-004 A1, UC-007 BR-002/BR-008): cambiar el código o ajustar la spec.
 5. Probar el **`POST /admin/sync` con cambios** desde la web.
