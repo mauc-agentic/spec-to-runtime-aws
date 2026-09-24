@@ -16,9 +16,10 @@ class Settings:
     repo_url: str = "https://github.com/mauc-agentic/spec-to-runtime-aws/blob/main"
     # UC-004 BR-005: respuesta de unas 600 palabras (~800 tokens).
     max_output_tokens: int = 800
-    retrieval_top_k: int = 4
-    # Umbral de relevancia; se ajusta con el corpus real (ver docs/charla).
-    min_relevance: float = 0.3
+    retrieval_top_k: int = 6
+    # Calibrado con el corpus real (docs/charla/uc-003-sincronizacion.md): las preguntas sin
+    # relación con el repo puntúan 0,60-0,64 y las relevantes 0,69 o más.
+    min_relevance: float = 0.66
     # UC-005 BR-001: 10 interacciones recordadas = 20 mensajes.
     context_messages: int = 20
 

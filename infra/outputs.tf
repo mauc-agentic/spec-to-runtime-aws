@@ -38,3 +38,8 @@ output "guardrail_id" {
 output "guardrail_version" {
   value = aws_bedrock_guardrail_version.agent.version
 }
+
+output "sync_function" {
+  description = "Lambda de UC-003; invócala con `aws lambda invoke` hasta que exista la API"
+  value       = aws_lambda_function.sync.function_name
+}
