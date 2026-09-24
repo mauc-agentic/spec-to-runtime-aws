@@ -77,7 +77,7 @@ scripts/deploy_agent.sh                                   # construye y sube la 
 terraform -chdir=infra apply -var agent_image_tag=<hash>  # crea o actualiza el Runtime
 ```
 
-Web (`web/`, estática, sin compilar): `cd web && node --test tests/` corre los tests del renderizador de Markdown (protegen contra XSS). `terraform -chdir=infra apply` sube los archivos a S3 y genera `config.js`; la dirección pública sale de `terraform -chdir=infra output web_url`. Para probar en local copia `web/config.example.js` a `web/config.js` y añade tu origen a `web_origins_extra` (CORS).
+Web (`web/`, estática, sin compilar): `cd web && node --test` corre los tests del renderizador de Markdown (protegen contra XSS). `terraform -chdir=infra apply` sube los archivos a S3 y genera `config.js`; la dirección pública sale de `terraform -chdir=infra output web_url`. Para probar en local copia `web/config.example.js` a `web/config.js` y añade tu origen a `web_origins_extra` (CORS).
 
 Prueba de humo de punta a punta contra la API real (11 comprobaciones; se limpia sola y sirve de calentamiento): `uv run python scripts/smoke_test.py`. Tras `scripts/deploy_agent.sh`, haz commit de `infra/agent_image.auto.tfvars`: versiona la imagen desplegada.
 

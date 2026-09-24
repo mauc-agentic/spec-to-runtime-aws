@@ -58,4 +58,5 @@ jobs:
         with:
           node-version: "22"
       # Las respuestas del modelo se muestran como HTML: estos tests protegen contra XSS.
-      - run: node --test web/tests/
+      - run: node --test
+        working-directory: web
