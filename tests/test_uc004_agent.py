@@ -222,3 +222,65 @@ def test_uc007_br005_the_report_goes_through_the_guardrail_before_being_shown():
     assert call["source"] == "OUTPUT" and call["guardrailIdentifier"] == "g"
     client.apply_guardrail.return_value = {"action": "NONE"}
     assert mask_with_guardrail(client, SETTINGS, "sin datos personales") == "sin datos personales"
+
+
+def _run_with_agent(agent):
+    async def go():
+        return [
+            e
+            async for e in handler.run(
+                PAYLOAD,
+                SETTINGS,
+                retrieve_fn=lambda _q: _passages(),
+                agent_factory=lambda *_a, **_k: agent,
+            )
+        ]
+
+    return asyncio.run(go())
+
+
+def test_uc005_a4_without_memory_the_answer_continues_and_the_user_is_told():
+    result = SimpleNamespace(stop_reason="end_turn", metrics=None)
+    agent = FakeAgent([{"data": "Respuesta"}, {"result": result}])
+    agent.memory_degraded = True
+
+    events = _run_with_agent(agent)
+
+    types = [e["type"] for e in events]
+    assert {"type": "notice", "code": "memory_unavailable"} in events
+    assert types.index("notice") < types.index("text")  # el aviso llega antes de la respuesta
+    assert types[-1] == "done"  # la consulta no falla
+
+
+def test_uc005_a4_with_memory_no_notice_is_sent():
+    result = SimpleNamespace(stop_reason="end_turn", metrics=None)
+    events = _run_with_agent(FakeAgent([{"data": "Respuesta"}, {"result": result}]))
+    assert "notice" not in [e["type"] for e in events]
+
+
+def test_uc005_a4_factory_builds_the_agent_without_memory_when_memory_fails(monkeypatch):
+    from spec_to_runtime.agent import factory
+
+    def broken_memory(*_a, **_k):
+        raise RuntimeError("AgentCore Memory no responde")
+
+    monkeypatch.setattr(factory, "AgentCoreMemorySessionManager", broken_memory)
+    settings = Settings(
+        knowledge_base_id="kb", guardrail_id="g", guardrail_version="1",
+        requests_table="t", memory_id="mem-1",
+    )  # fmt: skip
+
+    agent = factory.build_agent(
+        settings, role=Role.PARTICIPANT, profile=Profile.GENERAL, session_id="s", actor_id="u"
+    )
+
+    assert getattr(agent, factory.MEMORY_DEGRADED_ATTR) is True
+
+
+def test_uc005_a4_factory_marks_nothing_when_no_memory_is_configured():
+    from spec_to_runtime.agent import factory
+
+    agent = factory.build_agent(
+        SETTINGS, role=Role.PARTICIPANT, profile=Profile.GENERAL, session_id="s", actor_id="u"
+    )
+    assert getattr(agent, factory.MEMORY_DEGRADED_ATTR, False) is False

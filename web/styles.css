@@ -278,6 +278,8 @@ button { font: inherit; cursor: pointer; }
 .session .s-title { display: block; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .session .s-meta { display: block; color: var(--mist); font-size: .85rem; }
 .history-empty { color: var(--mist); }
+.history-more { align-self: center; margin-top: .4rem; }
+.note { margin: 0 0 .5rem; color: var(--mist); font-size: .9rem; }
 
 .toast {
   position: fixed;

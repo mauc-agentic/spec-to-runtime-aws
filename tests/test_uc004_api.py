@@ -209,3 +209,61 @@ def test_unknown_routes_and_unexpected_errors_do_not_leak_details(deps, monkeypa
     monkeypatch.setitem(api.ROUTES, "GET /boom", lambda _e: 1 / 0)
     boom = api.handler({"routeKey": "GET /boom"}, None)
     assert boom["statusCode"] == 500 and "division" not in boom["body"]
+
+
+def test_uc004_a4_personal_data_is_masked_before_storing_and_queueing_and_the_user_is_told(deps):
+    status, body = ask(deps, prompt="Mi correo es ana@example.com, ¿qué es AIUP?")
+    assert status == 202 and body["masked"] is True
+    assert body["prompt"] == "Mi correo es {EMAIL}, ¿qué es AIUP?"
+    item = requests_store.get_request(deps.table, "u1", body["request_id"])
+    assert item["prompt"] == body["prompt"] and item["notices"] == ["personal_data_masked"]
+    assert "ana@example.com" not in json.dumps(item, default=str)
+    (message,) = queued_messages(deps)
+    sent = json.loads(message["Body"])
+    assert sent["prompt"] == body["prompt"] and sent["notices"] == ["personal_data_masked"]
+    assert counter(deps.aws, "USER#u1", DAY) == 1  # el caso continúa en el paso 5: cuenta como uso
+    view = json.loads(
+        api.get_request(
+            event("GET /requests/{request_id}", "u1", path={"request_id": body["request_id"]})
+        )["body"]
+    )
+    assert view["notices"] == ["personal_data_masked"]  # el historial también lo muestra
+
+
+def test_uc004_a4_a_question_without_personal_data_carries_no_notice(deps):
+    status, body = ask(deps)
+    assert status == 202 and body["masked"] is False
+    item = requests_store.get_request(deps.table, "u1", body["request_id"])
+    assert "notices" not in item
+
+
+def test_uc004_a4_a_rejected_question_is_also_stored_masked(deps):
+    for _ in range(25):
+        ask(deps)
+    status, _ = ask(deps, prompt="llámame al 3001234567")
+    assert status == 429
+    stored = [
+        i for i in requests_store.user_requests(deps.table, "u1") if i["status"] == "Rejected"
+    ]
+    assert stored and stored[0]["prompt"] == "llámame al {PHONE}"
+
+
+def test_uc006_a4_the_next_page_continues_where_the_first_one_ended(deps):
+    for i in range(25):
+        ask(deps, user="u9", prompt=f"pregunta {i}", now=NOW + timedelta(hours=i))
+    first = json.loads(api.list_sessions(event("GET /sessions", "u9"))["body"])
+    second_event = {**event("GET /sessions", "u9"), "queryStringParameters": {"offset": "20"}}
+    second = json.loads(api.list_sessions(second_event)["body"])
+    assert first["has_more"] is True and len(first["sessions"]) == 20
+    assert len(second["sessions"]) == 5 and second["has_more"] is False
+    ids = [s["session_id"] for s in first["sessions"] + second["sessions"]]
+    assert len(set(ids)) == 25  # sin repetidos ni huecos
+    assert second["sessions"][0]["first_question"] == "pregunta 4"  # la 21.ª más reciente
+
+
+@pytest.mark.parametrize("raw", ["abc", "-5", ""])
+def test_uc006_a4_an_invalid_offset_counts_as_the_first_page(deps, raw):
+    ask(deps, user="u9")
+    bad = {**event("GET /sessions", "u9"), "queryStringParameters": {"offset": raw}}
+    out = json.loads(api.list_sessions(bad)["body"])
+    assert len(out["sessions"]) == 1 and out["offset"] == 0

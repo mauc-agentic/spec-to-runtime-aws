@@ -31,7 +31,7 @@ export function createApi(getToken, onUnauthorized) {
     ask: (prompt, profile, sessionId) =>
       request("POST", "/questions", { prompt, profile, ...(sessionId ? { session_id: sessionId } : {}) }),
     request: (id) => request("GET", `/requests/${encodeURIComponent(id)}`),
-    sessions: () => request("GET", "/sessions"),
+    sessions: (offset = 0) => request("GET", `/sessions?offset=${Number(offset) || 0}`),
     session: (id) => request("GET", `/sessions/${encodeURIComponent(id)}`),
     sync: () => request("POST", "/admin/sync"),
     syncStatus: () => request("GET", "/admin/sync"),

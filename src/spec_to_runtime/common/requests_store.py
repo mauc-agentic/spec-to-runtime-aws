@@ -95,7 +95,7 @@ def public_view(item: dict, include_trace: bool = False) -> dict:
     """
     keys = (
         "request_id", "session_id", "prompt", "profile", "status", "phase", "text",
-        "citations", "truncated", "no_source", "error_code", "created_at", "completed_at",
+        "citations", "truncated", "no_source", "notices", "error_code", "created_at", "completed_at",
     )  # fmt: skip
     keys = (*keys, "trace_id") if include_trace else keys
     return {k: _plain(item[k]) for k in keys if k in item}

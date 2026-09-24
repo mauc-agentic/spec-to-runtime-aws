@@ -129,6 +129,7 @@ def process(message: dict, deps: Deps, *, clock=time.monotonic, now=requests_sto
     first_text_ms = None
     parts: list[str] = []
     outcome, extra = None, {}
+    notices = list(message.get("notices", []))  # avisos para el participante (UC-004 A4, UC-005 A4)
     try:
         response = deps.runtime.invoke_agent_runtime(
             agentRuntimeArn=deps.runtime_arn,
@@ -159,6 +160,12 @@ def process(message: dict, deps: Deps, *, clock=time.monotonic, now=requests_sto
                         {"text": "".join(parts), "phase": "Writing"},
                     )
                     last_flush = clock()
+            elif kind == "notice":
+                if event["code"] not in notices:
+                    notices.append(event["code"])
+                    requests_store.update_request(
+                        deps.table, user_id, request_id, {"notices": notices}
+                    )
             elif kind == "blocked":
                 outcome = "Blocked"
             elif kind == "done":
