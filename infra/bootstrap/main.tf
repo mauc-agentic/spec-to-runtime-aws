@@ -16,7 +16,13 @@ provider "aws" {
 
 data "aws_caller_identity" "current" {}
 
+# Excepciones de checkov: state de un repo de charla, un solo bucket y una sola región.
 resource "aws_s3_bucket" "tfstate" {
+  #checkov:skip=CKV_AWS_144:Sin replicación cross-region; el state es reproducible y el bucket tiene versionado
+  #checkov:skip=CKV_AWS_145:SSE-S3 (AES256) es suficiente; KMS añade costo y gestión de llaves innecesarios aquí
+  #checkov:skip=CKV_AWS_18:Sin access logging; requeriría otro bucket de logs solo para la demo
+  #checkov:skip=CKV2_AWS_61:Sin lifecycle; el volumen del state es mínimo
+  #checkov:skip=CKV2_AWS_62:Sin notificaciones de eventos; nadie consume eventos del bucket
   bucket = "spec-to-runtime-tfstate-${data.aws_caller_identity.current.account_id}"
 
   lifecycle {
