@@ -150,9 +150,9 @@ Number of requests a user has made on a given day, used to enforce the per-user 
 | id           | Unique identifier                              | Long      | 19               | Primary Key, Sequence                            |
 | app_user_id  | User whose usage is counted                    | Long      | 19               | Not Null, Foreign Key (APP_USER.id)              |
 | usage_date   | Day the requests were made (UTC)               | Date      | -                | Not Null                                         |
-| request_count | Requests accepted that day                    | Integer   | 10               | Not Null, Min: 0, Max: 25                        |
+| request_count | Requests accepted that day                    | Integer   | 10               | Not Null, Min: 0, Max: 100                       |
 
-**Constraints:** one counter per user and day. When request_count reaches 25, further requests that day are Rejected. The sum of all counters must not exceed 3000 for the project.
+**Constraints:** one counter per user and day. When request_count reaches the daily allowance of the role (25 for a Participant, 100 for a Speaker), further requests that day are Rejected. The sum of all counters must not exceed 3000 for the project.
 
 ### TOOL_INVOCATION
 
