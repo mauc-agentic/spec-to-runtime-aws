@@ -17,4 +17,6 @@ USER agent
 
 # AgentCore Runtime exige el puerto 8080 con /invocations (POST) y /ping (GET).
 EXPOSE 8080
-CMD ["python", "-m", "spec_to_runtime.agent.app"]
+# El distro de OpenTelemetry de AWS instrumenta el agente (Strands, boto3, HTTP) sin cambiar el
+# código: cada consulta, llamada al modelo y herramienta aparece como un span en CloudWatch.
+CMD ["opentelemetry-instrument", "python", "-m", "spec_to_runtime.agent.app"]

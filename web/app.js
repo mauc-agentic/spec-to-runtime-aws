@@ -1,6 +1,7 @@
 import { ApiError, createApi } from "./api.js";
 import * as cognito from "./cognito.js";
 import { describeFailure } from "./errors.js";
+import { sessionUrl } from "./links.js";
 import { renderMarkdown } from "./markdown.js";
 
 const $ = (selector, root = document) => root.querySelector(selector);
@@ -183,9 +184,24 @@ function setText(message, text) {
   scrollToEnd();
 }
 
+function addSessionLink(message, sessionId) {
+  // Solo el Ponente: la consola de CloudWatch es de quien administra la cuenta.
+  const url = state.isSpeaker && sessionUrl(window.APP_CONFIG.region, sessionId);
+  if (!url || message.sessionLink) return;
+  const link = document.createElement("a");
+  link.className = "trace-link";
+  link.href = url;
+  link.target = "_blank";
+  link.rel = "noopener noreferrer";
+  link.textContent = "Ver sesión en CloudWatch";
+  message.bubble.append(link);
+  message.sessionLink = link;
+}
+
 function paint(message, data) {
   if (data.text) setText(message, data.text);
   if (FINAL.has(data.status)) {
+    addSessionLink(message, data.session_id);
     message.status.hidden = true;
     if (data.status === "Blocked") message.bubble.classList.add("notice");
   } else {

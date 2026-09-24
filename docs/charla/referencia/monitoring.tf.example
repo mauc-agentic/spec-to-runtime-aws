@@ -1,0 +1,195 @@
+# Panel y alarmas de CloudWatch. Las métricas de AWS (Lambda, SQS, API Gateway, AgentCore, Bedrock,
+# Guardrails) vienen solas; las de negocio (resultado, latencias por tramo, tokens, rechazos por cuota)
+# las emiten las Lambdas en formato EMF (namespace SpecToRuntime).
+
+locals {
+  dash_region   = var.region
+  runtime_arn   = local.agent_runtime_arn
+  runtime_name  = "${replace(local.name, "-", "_")}_agent::DEFAULT"
+  runtime_dims  = ["Name", local.runtime_name, "Operation", "InvokeAgentRuntime", "Resource", local.runtime_arn]
+  model_id      = "us.amazon.nova-2-lite-v1:0"
+  api_dims      = ["ApiId", aws_apigatewayv2_api.main.id, "Stage", "$default"]
+  orch_fn       = aws_lambda_function.orchestrator.function_name
+  api_fn        = aws_lambda_function.api.function_name
+  requests_name = aws_dynamodb_table.requests.name
+}
+
+# --- Avisos ------------------------------------------------------------------------------------
+
+resource "aws_sns_topic" "alerts" {
+  # checkov:skip=CKV_AWS_26:Tema con cifrado por defecto; una CMK añade costo fijo (NFR-012)
+  name = "${local.name}-alerts"
+}
+
+# La suscripción por correo queda "pendiente" hasta que la persona confirma el enlace que recibe.
+resource "aws_sns_topic_subscription" "alerts_email" {
+  topic_arn = aws_sns_topic.alerts.arn
+  protocol  = "email"
+  endpoint  = var.alert_email
+}
+
+locals {
+  alarms = {
+    orchestrator-errors = {
+      description = "La Lambda orquestadora falló: alguna pregunta pudo quedarse sin respuesta"
+      namespace   = "AWS/Lambda"
+      metric      = "Errors"
+      dimensions  = { FunctionName = local.orch_fn }
+      statistic   = "Sum"
+      threshold   = 1
+    }
+    dead-letter-queue = {
+      description = "Hay mensajes en la cola de errores: preguntas que fallaron 3 veces"
+      namespace   = "AWS/SQS"
+      metric      = "ApproximateNumberOfMessagesVisible"
+      dimensions  = { QueueName = aws_sqs_queue.requests_dlq.name }
+      statistic   = "Maximum"
+      threshold   = 1
+    }
+    api-5xx = {
+      description = "La API devuelve errores 5xx"
+      namespace   = "AWS/ApiGateway"
+      metric      = "5xx"
+      dimensions  = { ApiId = aws_apigatewayv2_api.main.id, Stage = "$default" }
+      statistic   = "Sum"
+      threshold   = 3
+    }
+    runtime-system-errors = {
+      description = "AgentCore Runtime reporta errores del sistema"
+      namespace   = "AWS/Bedrock-AgentCore"
+      metric      = "SystemErrors"
+      dimensions  = { Name = local.runtime_name, Operation = "InvokeAgentRuntime", Resource = local.runtime_arn }
+      statistic   = "Sum"
+      threshold   = 1
+    }
+    failed-questions = {
+      description = "Varias preguntas terminaron en Failed (ver el panel y los logs de la orquestadora)"
+      namespace   = "SpecToRuntime"
+      metric      = "Requests"
+      dimensions  = { Outcome = "Failed" }
+      statistic   = "Sum"
+      threshold   = 3
+    }
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "alarms" {
+  for_each = local.alarms
+
+  alarm_name          = "${local.name}-${each.key}"
+  alarm_description   = each.value.description
+  namespace           = each.value.namespace
+  metric_name         = each.value.metric
+  dimensions          = each.value.dimensions
+  statistic           = each.value.statistic
+  period              = 300
+  evaluation_periods  = 1
+  threshold           = each.value.threshold
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  treat_missing_data  = "notBreaching" # sin datos no hay problema: nadie está preguntando
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+  ok_actions          = [aws_sns_topic.alerts.arn]
+}
+
+# Latencia lenta: el percentil 90 de la respuesta completa supera 15 s en 2 de 3 periodos.
+resource "aws_cloudwatch_metric_alarm" "slow_answers" {
+  alarm_name          = "${local.name}-slow-answers"
+  alarm_description   = "Las respuestas tardan demasiado (NFR-011 pide 10 s; aviso a los 15 s)"
+  namespace           = "SpecToRuntime"
+  metric_name         = "TotalLatencyMs"
+  dimensions          = { Outcome = "Completed" }
+  extended_statistic  = "p90"
+  period              = 300
+  evaluation_periods  = 3
+  datapoints_to_alarm = 2
+  threshold           = 15000
+  comparison_operator = "GreaterThanThreshold"
+  treat_missing_data  = "notBreaching"
+  alarm_actions       = [aws_sns_topic.alerts.arn]
+}
+
+# --- Panel -------------------------------------------------------------------------------------
+
+locals {
+  text_links = <<-EOT
+    ## Pregúntale al repo: estado de punta a punta
+    [Observabilidad de AgentCore](https://${local.dash_region}.console.aws.amazon.com/cloudwatch/home?region=${local.dash_region}#/gen-ai-observability/agent-core/agents) |
+    [Trazas](https://${local.dash_region}.console.aws.amazon.com/cloudwatch/home?region=${local.dash_region}#xray:traces) |
+    [Mapa de servicios](https://${local.dash_region}.console.aws.amazon.com/cloudwatch/home?region=${local.dash_region}#xray:service-map) |
+    [Alarmas](https://${local.dash_region}.console.aws.amazon.com/cloudwatch/home?region=${local.dash_region}#alarmsV2:)
+  EOT
+
+  widget_defaults = { region = local.dash_region, view = "timeSeries", stacked = false, period = 300 }
+}
+
+resource "aws_cloudwatch_dashboard" "main" {
+  dashboard_name = local.name
+
+  dashboard_body = jsonencode({
+    widgets = [
+      { type = "text", x = 0, y = 0, width = 24, height = 2, properties = { markdown = local.text_links } },
+
+      # Negocio: qué pasó con las preguntas
+      { type = "metric", x = 0, y = 2, width = 6, height = 4, properties = { region = local.dash_region, view = "singleValue", title = "Preguntas enviadas (rango)", setPeriodToTimeRange = true, stat = "Sum",
+      metrics = [["SpecToRuntime", "Submitted", "Role", "Participant", { label = "Participantes" }], ["SpecToRuntime", "Submitted", "Role", "Speaker", { label = "Ponente" }]] } },
+      { type = "metric", x = 6, y = 2, width = 6, height = 4, properties = { region = local.dash_region, view = "singleValue", title = "Resultado de las preguntas (rango)", setPeriodToTimeRange = true, stat = "Sum",
+      metrics = [for o in ["Completed", "Blocked", "Failed"] : ["SpecToRuntime", "Requests", "Outcome", o, { label = o }]] } },
+      { type = "metric", x = 12, y = 2, width = 6, height = 4, properties = { region = local.dash_region, view = "singleValue", title = "Rechazadas por cuota (rango)", setPeriodToTimeRange = true, stat = "Sum",
+      metrics = [["SpecToRuntime", "Rejections", "Reason", "daily", { label = "Límite diario" }], ["SpecToRuntime", "Rejections", "Reason", "project", { label = "Límite del proyecto" }]] } },
+      { type = "metric", x = 18, y = 2, width = 6, height = 4, properties = { region = local.dash_region, view = "singleValue", title = "Tokens (rango)", setPeriodToTimeRange = true, stat = "Sum",
+      metrics = [["SpecToRuntime", "InputTokens", "Outcome", "Completed", { label = "Entrada" }], ["SpecToRuntime", "OutputTokens", "Outcome", "Completed", { label = "Salida" }]] } },
+
+      # Latencias por tramo
+      { type = "metric", x = 0, y = 6, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "Respuesta completa (ms)",
+        metrics = [["SpecToRuntime", "TotalLatencyMs", "Outcome", "Completed", { stat = "p50", label = "p50" }], ["...", { stat = "p90", label = "p90" }]],
+      annotations = { horizontal = [{ label = "Objetivo NFR-011", value = 10000 }] } }) },
+      { type = "metric", x = 8, y = 6, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "Hasta el primer texto (ms)",
+      metrics = [["SpecToRuntime", "FirstTextMs", "Outcome", "Completed", { stat = "p50", label = "p50" }], ["...", { stat = "p90", label = "p90" }]] }) },
+      { type = "metric", x = 16, y = 6, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "Espera en la cola (ms)",
+      metrics = [["SpecToRuntime", "QueueWaitMs", "Outcome", "Completed", { stat = "p50", label = "p50" }], ["...", { stat = "p90", label = "p90" }]] }) },
+
+      # Entrada: API y cola
+      { type = "metric", x = 0, y = 12, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "API: peticiones y errores",
+        metrics = [["AWS/ApiGateway", "Count", local.api_dims[0], local.api_dims[1], local.api_dims[2], local.api_dims[3], { stat = "Sum", label = "Peticiones" }],
+          ["AWS/ApiGateway", "4xx", local.api_dims[0], local.api_dims[1], local.api_dims[2], local.api_dims[3], { stat = "Sum", label = "4xx" }],
+      ["AWS/ApiGateway", "5xx", local.api_dims[0], local.api_dims[1], local.api_dims[2], local.api_dims[3], { stat = "Sum", label = "5xx" }]] }) },
+      { type = "metric", x = 8, y = 12, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "Cola de preguntas",
+        metrics = [["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.requests.name, { stat = "Maximum", label = "En espera" }],
+          ["AWS/SQS", "ApproximateAgeOfOldestMessage", "QueueName", aws_sqs_queue.requests.name, { stat = "Maximum", label = "Edad del más viejo (s)", yAxis = "right" }],
+      ["AWS/SQS", "ApproximateNumberOfMessagesVisible", "QueueName", aws_sqs_queue.requests_dlq.name, { stat = "Maximum", label = "Cola de errores" }]] }) },
+      { type = "metric", x = 16, y = 12, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "Lambdas: duración p90 (ms)",
+        metrics = [["AWS/Lambda", "Duration", "FunctionName", local.api_fn, { stat = "p90", label = "api" }],
+      ["AWS/Lambda", "Duration", "FunctionName", local.orch_fn, { stat = "p90", label = "orquestadora" }]] }) },
+
+      # Agente
+      { type = "metric", x = 0, y = 18, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "AgentCore Runtime: invocaciones y errores",
+        metrics = [concat(["AWS/Bedrock-AgentCore", "Invocations"], local.runtime_dims, [{ stat = "Sum", label = "Invocaciones" }]),
+          concat(["AWS/Bedrock-AgentCore", "SystemErrors"], local.runtime_dims, [{ stat = "Sum", label = "Errores del sistema" }]),
+          concat(["AWS/Bedrock-AgentCore", "UserErrors"], local.runtime_dims, [{ stat = "Sum", label = "Errores del usuario" }]),
+      concat(["AWS/Bedrock-AgentCore", "Throttles"], local.runtime_dims, [{ stat = "Sum", label = "Límites de tasa" }])] }) },
+      { type = "metric", x = 8, y = 18, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "AgentCore Runtime: latencia (ms)",
+        metrics = [concat(["AWS/Bedrock-AgentCore", "Latency"], local.runtime_dims, [{ stat = "p50", label = "p50" }]),
+      concat(["AWS/Bedrock-AgentCore", "Latency"], local.runtime_dims, [{ stat = "p90", label = "p90" }])] }) },
+      { type = "metric", x = 16, y = 18, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "Modelo (Nova 2 Lite): latencia y primer token (ms)",
+        metrics = [["AWS/Bedrock", "InvocationLatency", "ModelId", local.model_id, { stat = "p90", label = "Latencia p90" }],
+      ["AWS/Bedrock", "TimeToFirstToken", "ModelId", local.model_id, { stat = "p90", label = "Primer token p90" }]] }) },
+
+      # Costo y seguridad
+      { type = "metric", x = 0, y = 24, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "Modelo: tokens (costo)",
+        metrics = [["AWS/Bedrock", "InputTokenCount", "ModelId", local.model_id, { stat = "Sum", label = "Entrada" }],
+      ["AWS/Bedrock", "OutputTokenCount", "ModelId", local.model_id, { stat = "Sum", label = "Salida" }]] }) },
+      { type = "metric", x = 8, y = 24, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "Guardrails: revisadas e intervenidas",
+        metrics = [["AWS/Bedrock/Guardrails", "Invocations", "GuardrailArn", aws_bedrock_guardrail.agent.guardrail_arn, "GuardrailVersion", aws_bedrock_guardrail_version.agent.version, { stat = "Sum", label = "Revisadas" }],
+      ["AWS/Bedrock/Guardrails", "InvocationsIntervened", "Operation", "ApplyGuardrail", { stat = "Sum", label = "Intervenidas" }]] }) },
+      { type = "metric", x = 16, y = 24, width = 8, height = 6, properties = merge(local.widget_defaults, { title = "Memoria de AgentCore: latencia por operación (ms)",
+        metrics = [["AWS/Bedrock-AgentCore", "Latency", "Operation", "CreateEvent", { stat = "p90", label = "CreateEvent" }],
+      ["AWS/Bedrock-AgentCore", "Latency", "Operation", "ListEvents", { stat = "p90", label = "ListEvents" }]] }) },
+
+      # Registros: lo que pasó, con su request_id
+      { type = "log", x = 0, y = 30, width = 12, height = 6, properties = { region = local.dash_region, title = "Preguntas fallidas (con su traza)", view = "table",
+      query = "SOURCE '/aws/lambda/${local.orch_fn}' | fields @timestamp, request_id, error_code, trace_id | filter Outcome = 'Failed' | sort @timestamp desc | limit 20" } },
+      { type = "log", x = 12, y = 30, width = 12, height = 6, properties = { region = local.dash_region, title = "Las 10 preguntas más lentas", view = "table",
+      query = "SOURCE '/aws/lambda/${local.orch_fn}' | fields @timestamp, request_id, TotalLatencyMs, FirstTextMs, QueueWaitMs, profile, trace_id | filter Outcome = 'Completed' | sort TotalLatencyMs desc | limit 10" } },
+    ]
+  })
+}

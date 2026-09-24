@@ -86,7 +86,6 @@ resource "aws_lambda_function" "pre_signup" {
   # checkov:skip=CKV_AWS_173:Variables sin CMK; no contienen secretos (solo el ARN del secreto)
   # checkov:skip=CKV_AWS_272:Sin firma de código; el paquete lo genera Terraform desde este repo
   # checkov:skip=CKV_AWS_115:Sin límite de concurrencia; el máximo de cuentas ya acota el uso
-  # checkov:skip=CKV_AWS_50:Sin X-Ray; los logs de CloudWatch bastan para el evento
   function_name    = "${local.name}-pre-signup"
   role             = aws_iam_role.pre_signup.arn
   runtime          = "python3.14"
@@ -95,6 +94,11 @@ resource "aws_lambda_function" "pre_signup" {
   source_code_hash = data.archive_file.pre_signup.output_base64sha256
   timeout          = 10
   memory_size      = 128
+
+  tracing_config {
+    mode = "Active"
+  }
+
 
   environment {
     variables = {

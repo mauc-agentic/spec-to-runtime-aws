@@ -100,6 +100,7 @@ def test_uc004_the_agent_is_called_with_the_session_role_and_profile_from_the_qu
         "role": "Participant",
         "user_id": "u1",
         "session_id": call["runtimeSessionId"],
+        "request_id": "r1",
     }
 
 

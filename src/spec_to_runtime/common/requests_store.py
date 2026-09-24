@@ -88,12 +88,16 @@ def session_last_activity(table, user_id: str, session_id: str) -> datetime | No
     return None
 
 
-def public_view(item: dict) -> dict:
-    """Solo lo que el navegador necesita; nunca el identificador del usuario."""
+def public_view(item: dict, include_trace: bool = False) -> dict:
+    """Solo lo que el navegador necesita; nunca el identificador del usuario.
+
+    El identificador de traza solo se entrega al Ponente, para abrir la traza en CloudWatch.
+    """
     keys = (
         "request_id", "session_id", "prompt", "profile", "status", "phase", "text",
         "citations", "truncated", "no_source", "error_code", "created_at", "completed_at",
     )  # fmt: skip
+    keys = (*keys, "trace_id") if include_trace else keys
     return {k: _plain(item[k]) for k in keys if k in item}
 
 

@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 import boto3
 from botocore.config import Config
 
-from spec_to_runtime.common import quota, requests_store
+from spec_to_runtime.common import metrics, quota, requests_store, tracing
 
 logger = logging.getLogger(__name__)
 
@@ -111,9 +111,19 @@ def submit_question(event: dict, now: datetime | None = None) -> dict:
         profile=profile, role=role, now=now,
     )  # fmt: skip
 
+    trace_header = tracing.xray_header()
+    trace_id = tracing.root_trace_id(trace_header)
+    if trace_id:
+        # Traza de esta Lambda. SQS no continúa la traza sino que la enlaza: la traza principal
+        # (orquestador + agente) la fija el orquestador en `trace_id` y enlaza a esta.
+        item["api_trace_id"] = trace_id
+
     try:
         quota.reserve(deps.usage_client, deps.usage_table, user_id, role, now, deps.project_cap)
     except quota.LimitReachedError as limit:  # UC-004 A2: se registra sin consultar al agente
+        metrics.emit(
+            {"Rejections": (1, "Count")}, {"Reason": limit.kind}, {"request_id": request_id}
+        )
         rejected = {
             **item,
             "status": "Rejected",
@@ -135,21 +145,24 @@ def submit_question(event: dict, now: datetime | None = None) -> dict:
         )
 
     requests_store.put_request(deps.table, item)
+    message = {
+        "user_id": user_id,
+        "request_id": request_id,
+        "session_id": session_id,
+        "prompt": prompt,
+        "profile": profile,
+        "role": role,
+        "day": item["day"],
+        "created_at": item["created_at"],  # el orquestador mide con esto la espera en la cola
+    }
+    extra = {}
+    if trace_header:
+        # Sin esto la traza se corta en la cola: Lambda continúa la traza con el atributo del sistema.
+        extra["MessageSystemAttributes"] = {
+            "AWSTraceHeader": {"DataType": "String", "StringValue": trace_header}
+        }
     try:
-        deps.sqs.send_message(
-            QueueUrl=deps.queue_url,
-            MessageBody=json.dumps(
-                {
-                    "user_id": user_id,
-                    "request_id": request_id,
-                    "session_id": session_id,
-                    "prompt": prompt,
-                    "profile": profile,
-                    "role": role,
-                    "day": item["day"],
-                }
-            ),
-        )
+        deps.sqs.send_message(QueueUrl=deps.queue_url, MessageBody=json.dumps(message), **extra)
     except Exception:
         logger.exception("enqueue_failed request_id=%s", request_id)
         requests_store.update_request(
@@ -161,6 +174,7 @@ def submit_question(event: dict, now: datetime | None = None) -> dict:
         quota.release(deps.usage_client, deps.usage_table, user_id, item["day"])
         return _error(503, "unavailable", "No se pudo enviar la pregunta. Inténtalo de nuevo.")
 
+    metrics.emit({"Submitted": (1, "Count")}, {"Role": role}, {"request_id": request_id})
     return _response(
         202,
         {
@@ -173,11 +187,11 @@ def submit_question(event: dict, now: datetime | None = None) -> dict:
 
 
 def get_request(event: dict) -> dict:
-    user_id, _ = _identity(event)
+    user_id, role = _identity(event)
     item = requests_store.get_request(_deps().table, user_id, event["pathParameters"]["request_id"])
     if item is None:
         return _error(404, "not_found", "La consulta no existe.")
-    return _response(200, requests_store.public_view(item))
+    return _response(200, requests_store.public_view(item, include_trace=role == "Speaker"))
 
 
 def list_sessions(event: dict) -> dict:

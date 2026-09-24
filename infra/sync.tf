@@ -63,7 +63,6 @@ resource "aws_lambda_function" "sync" {
   # checkov:skip=CKV_AWS_173:Variables sin CMK; no contienen secretos
   # checkov:skip=CKV_AWS_272:Sin firma de código; el paquete lo genera Terraform desde este repo
   # checkov:skip=CKV_AWS_115:Sin límite de concurrencia; Bedrock ya impide dos ingestas a la vez (UC-003 BR-007)
-  # checkov:skip=CKV_AWS_50:Sin X-Ray; los logs de CloudWatch bastan para el evento
   function_name    = "${local.name}-sync"
   role             = aws_iam_role.sync.arn
   runtime          = "python3.14"
@@ -72,6 +71,11 @@ resource "aws_lambda_function" "sync" {
   source_code_hash = data.archive_file.app.output_base64sha256
   timeout          = 300
   memory_size      = 256
+
+  tracing_config {
+    mode = "Active"
+  }
+
 
   environment {
     variables = {

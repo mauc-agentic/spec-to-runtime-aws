@@ -11,7 +11,7 @@ from typing import Any
 
 from strands.types.exceptions import MaxTokensReachedException
 
-from spec_to_runtime.agent import retrieval
+from spec_to_runtime.agent import retrieval, telemetry
 from spec_to_runtime.agent.config import Settings
 from spec_to_runtime.agent.factory import REPORT_KEY
 from spec_to_runtime.agent.profiles import NO_SOURCE_MESSAGE, Profile, Role
@@ -43,6 +43,8 @@ def parse_payload(payload: dict[str, Any]) -> dict[str, Any]:
         "role": role,
         "user_id": payload["user_id"],
         "session_id": payload["session_id"],
+        # Opcional: el orquestador lo envía para unir la traza con DynamoDB y los logs.
+        "request_id": str(payload.get("request_id", ""))[:64],
     }
 
 
@@ -67,12 +69,37 @@ async def run(
         yield {"type": "error", "code": "invalid_request", "message": str(error)}
         return
 
+    # Trazas: `session.id` agrupa por conversación y `request_id` une la traza con DynamoDB y los logs.
+    with telemetry.session_context(request["session_id"]):
+        telemetry.annotate(
+            request_id=request["request_id"],
+            profile=str(request["profile"]),
+            role=str(request["role"]),
+            prompt_chars=len(request["prompt"]),
+        )
+        async for event in _answer(request, settings, retrieve_fn, agent_factory):
+            yield event
+
+
+async def _answer(
+    request: dict[str, Any],
+    settings: Settings,
+    retrieve_fn: Callable[..., list[retrieval.Passage]],
+    agent_factory: Callable[..., Any],
+) -> AsyncIterator[dict[str, Any]]:
     context, citations = "", []
     if request["role"] is Role.PARTICIPANT:
         yield {"type": "status", "status": "Searching"}
-        passages = retrieve_fn(request["prompt"])
+        with telemetry.span(
+            "rag.retrieve", top_k=settings.retrieval_top_k, min_relevance=settings.min_relevance
+        ):
+            passages = retrieve_fn(request["prompt"])
+            telemetry.annotate(
+                passages=len(passages), top_score=max((p.score for p in passages), default=None)
+            )
         if not passages:
             # UC-004 A5: sin fuente no se llama al modelo (ahorra costo).
+            telemetry.annotate(outcome="no_source")
             yield {"type": "no_source", "text": NO_SOURCE_MESSAGE}
             yield {"type": "done", "citations": [], "no_source": True, "usage": _usage(None)}
             return
@@ -97,6 +124,7 @@ async def run(
                 result = event["result"]
     except MaxTokensReachedException:
         # UC-004 BR-005: el tope de longitud recorta la respuesta; el texto parcial ya se emitió.
+        telemetry.annotate(outcome="truncated", citations=len(citations))
         yield {
             "type": "done",
             "citations": citations,
@@ -108,6 +136,7 @@ async def run(
     except Exception as error:
         # NFR-007: el detalle va a CloudWatch; al participante solo le llega el tipo de error.
         logger.exception("agent_failed session_id=%s", request["session_id"])
+        telemetry.annotate(outcome="error", error_type=type(error).__name__)
         yield {"type": "error", "code": "agent_failed", "message": type(error).__name__}
         return
 
@@ -118,12 +147,20 @@ async def run(
         yield {"type": "text", "text": report}
 
     if result is not None and result.stop_reason == "guardrail_intervened":
+        telemetry.annotate(outcome="blocked")
         yield {"type": "blocked"}
         return
+    usage = _usage(result)
+    telemetry.annotate(
+        outcome="completed",
+        citations=len(citations),
+        input_tokens=usage["input_tokens"],
+        output_tokens=usage["output_tokens"],
+    )
     yield {
         "type": "done",
         "citations": citations,
         "no_source": False,
         "truncated": False,
-        "usage": _usage(result),
+        "usage": usage,
     }

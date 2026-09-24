@@ -124,6 +124,31 @@ resource "aws_iam_role_policy" "agent" {
         Resource = aws_bedrockagentcore_memory.agent.arn
       },
       {
+        # Trazas y métricas de AgentCore Observability (ADOT dentro del contenedor).
+        Sid    = "XRay"
+        Effect = "Allow"
+        Action = [
+          "xray:PutTraceSegments",
+          "xray:PutTelemetryRecords",
+          "xray:GetSamplingRules",
+          "xray:GetSamplingTargets",
+        ]
+        Resource = "*"
+      },
+      {
+        Sid       = "AgentCoreMetrics"
+        Effect    = "Allow"
+        Action    = ["cloudwatch:PutMetricData"]
+        Resource  = "*"
+        Condition = { StringEquals = { "cloudwatch:namespace" = "bedrock-agentcore" } }
+      },
+      {
+        Sid      = "DescribeLogGroups"
+        Effect   = "Allow"
+        Action   = ["logs:DescribeLogGroups"]
+        Resource = "arn:aws:logs:${var.region}:${data.aws_caller_identity.current.account_id}:log-group:*"
+      },
+      {
         Sid    = "TopQuestions"
         Effect = "Allow"
         Action = ["dynamodb:Query"]

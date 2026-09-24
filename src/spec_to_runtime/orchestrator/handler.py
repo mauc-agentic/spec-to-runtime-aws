@@ -10,13 +10,14 @@ import logging
 import os
 import time
 from dataclasses import dataclass
+from datetime import datetime
 from decimal import Decimal
 
 import boto3
 from botocore.config import Config
 from botocore.exceptions import ClientError
 
-from spec_to_runtime.common import quota, requests_store
+from spec_to_runtime.common import metrics, quota, requests_store, tracing
 from spec_to_runtime.orchestrator import formatting, stream
 
 logger = logging.getLogger(__name__)
@@ -63,6 +64,41 @@ def _finish(deps: Deps, message: dict, status: str, fields: dict, now) -> None:
         quota.release(deps.usage_client, deps.usage_table, message["user_id"], message["day"])
 
 
+def _trace_fields() -> dict:
+    """Traza principal de la pregunta (orquestador + agente); enlaza a la traza de la API."""
+    trace_id = tracing.root_trace_id(tracing.xray_header())
+    return {"trace_id": trace_id} if trace_id else {}
+
+
+def _queue_wait_ms(message: dict, now) -> float | None:
+    """Cuánto esperó la solicitud en la cola (el mensaje trae la hora en que la API la aceptó)."""
+    created = message.get("created_at")
+    if not created:
+        return None
+    return max((now() - datetime.fromisoformat(created)).total_seconds() * 1000, 0)
+
+
+def _emit_metrics(message, outcome, extra, total_ms, first_text_ms, queue_wait_ms) -> None:
+    """Métricas propias (EMF): resultado, latencias por tramo y tokens."""
+    values = {"Requests": (1, "Count"), "TotalLatencyMs": (total_ms, "Milliseconds")}
+    if first_text_ms is not None:
+        values["FirstTextMs"] = (first_text_ms, "Milliseconds")
+    if queue_wait_ms is not None:
+        values["QueueWaitMs"] = (queue_wait_ms, "Milliseconds")
+    usage = extra.get("usage") or {}
+    for key, name in (("input_tokens", "InputTokens"), ("output_tokens", "OutputTokens")):
+        if usage.get(key):
+            values[name] = (float(usage[key]), "Count")
+    properties = {
+        "request_id": message["request_id"],
+        "profile": message["profile"],
+        "role": message["role"],
+        "error_code": extra.get("error_code"),
+        "trace_id": tracing.root_trace_id(tracing.xray_header()),
+    }
+    metrics.emit(values, {"Outcome": outcome}, {k: v for k, v in properties.items() if v})
+
+
 def process(message: dict, deps: Deps, *, clock=time.monotonic, now=requests_store.now_utc) -> str:
     """Procesa una solicitud y devuelve su estado final (o 'Skipped' si ya se atendió)."""
     user_id, request_id = message["user_id"], message["request_id"]
@@ -71,7 +107,7 @@ def process(message: dict, deps: Deps, *, clock=time.monotonic, now=requests_sto
             deps.table,
             user_id,
             request_id,
-            {"status": "Processing", "phase": "Processing"},
+            {"status": "Processing", "phase": "Processing", **_trace_fields()},
             only_if_status="Queued",
         )
     except ClientError as error:
@@ -80,10 +116,17 @@ def process(message: dict, deps: Deps, *, clock=time.monotonic, now=requests_sto
         raise
 
     payload = {
-        "prompt": message["prompt"], "profile": message["profile"], "role": message["role"],
-        "user_id": user_id, "session_id": message["session_id"],
-    }  # fmt: skip
-    deadline, last_flush = clock() + DEADLINE_SECONDS, clock()
+        "prompt": message["prompt"],
+        "profile": message["profile"],
+        "role": message["role"],
+        "user_id": user_id,
+        "session_id": message["session_id"],
+        "request_id": request_id,  # une la traza del agente con DynamoDB y los logs
+    }
+    started = clock()
+    deadline, last_flush = started + DEADLINE_SECONDS, started
+    queue_wait_ms = _queue_wait_ms(message, now)
+    first_text_ms = None
     parts: list[str] = []
     outcome, extra = None, {}
     try:
@@ -92,6 +135,8 @@ def process(message: dict, deps: Deps, *, clock=time.monotonic, now=requests_sto
             runtimeSessionId=message["session_id"],
             payload=json.dumps(payload).encode(),
             contentType="application/json",
+            # Continúa la traza de la Lambda en el agente y agrupa por conversación.
+            **tracing.runtime_trace_kwargs(message["session_id"]),
         )
         for event in stream.iter_events(response["response"]):
             if clock() > deadline:
@@ -103,6 +148,8 @@ def process(message: dict, deps: Deps, *, clock=time.monotonic, now=requests_sto
                     deps.table, user_id, request_id, {"phase": event["status"]}
                 )
             elif kind in ("text", "no_source"):
+                if first_text_ms is None:
+                    first_text_ms = (clock() - started) * 1000
                 parts.append(event["text"])
                 if clock() - last_flush >= FLUSH_SECONDS:
                     requests_store.update_request(
@@ -141,6 +188,7 @@ def process(message: dict, deps: Deps, *, clock=time.monotonic, now=requests_sto
     else:
         text = ""  # UC-004 postcondiciones: no se guarda como respuesta válida
     _finish(deps, message, outcome, {**extra, "text": text}, now)
+    _emit_metrics(message, outcome, extra, (clock() - started) * 1000, first_text_ms, queue_wait_ms)
     return outcome
 
 
