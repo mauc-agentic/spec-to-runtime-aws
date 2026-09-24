@@ -6,7 +6,7 @@
 **Use Case Name:** Continuar una conversación  
 **Primary Actor:** Participante  
 **Goal:** Ask a follow-up question that builds on what was already discussed, without repeating the context  
-**Status:** Draft
+**Status:** Implemented
 
 **Traces to:** FR-018 · NFR-011, NFR-013
 

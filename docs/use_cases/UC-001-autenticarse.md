@@ -6,7 +6,7 @@
 **Use Case Name:** Autenticarse  
 **Primary Actor:** Participante  
 **Goal:** Sign in with a personal account so that the agent knows who is asking and what the person may do  
-**Status:** Draft
+**Status:** Implemented
 
 **Traces to:** FR-013, FR-021 · NFR-006, NFR-009, NFR-013
 
