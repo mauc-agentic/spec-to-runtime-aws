@@ -12,19 +12,21 @@ La aplicación de demostración es un agente que responde preguntas sobre este m
 
 - **RAG económico:** Amazon Bedrock Knowledge Base con Amazon S3 Vectors como almacén de vectores y Titan Text Embeddings v2 (256 dimensiones). Se evita OpenSearch Serverless por su costo mínimo mensual.
 - **Modelo:** Amazon Nova 2 Lite (`us.amazon.nova-2-lite-v1:0`) en `us-east-1`.
-- **Identidad:** Amazon Cognito emite el JWT; AgentCore Gateway lo valida. El token trae el **perfil** (Estudiante, Profesional, General) y el **rol** (Asistente, Presentador).
-- **Respuesta adaptada al perfil:** el mismo agente y la misma base de conocimiento responden distinto (didáctico para estudiantes, técnico para profesionales, resumido para el público general).
-- **Herramientas:** expuestas por AgentCore Gateway (targets Lambda y servidor MCP de AWS).
+- **Identidad:** Amazon Cognito emite el JWT, que API Gateway y AgentCore Gateway validan. El **rol** (Participante o Ponente) sale del grupo de Cognito; el **perfil de respuesta** (Básico, Técnico, General) lo elige cada persona en la interfaz y puede cambiarlo.
+- **Respuesta adaptada al perfil:** el mismo agente y la misma base de conocimiento responden distinto (Básico: didáctico para estudiantes; Técnico: detallado para profesionales; General: resumido para el público).
+- **Flujo:** página web → API Gateway con autorización Cognito → SQS → Lambda que orquesta la llamada al agente y da formato a la respuesta → agente en AgentCore. La latencia percibida se protege con indicador de progreso o streaming (ver `docs/charla/arquitectura-flujo.md`).
+- **Persistencia:** DynamoDB (on-demand) guarda el historial de conversaciones, las cuotas de uso y las preguntas para el análisis del ponente.
+- **Análisis del ponente:** el Ponente le pregunta al agente cuáles fueron las preguntas más frecuentes y recibe un top 10 agrupado por tema, mediante una herramienta de AgentCore Gateway restringida a su rol.
+- **Herramientas:** expuestas por AgentCore Gateway (targets Lambda y servidor MCP de AWS): búsqueda de documentos y, solo para el Ponente, el top de preguntas.
 - **Memoria:** AgentCore Memory de corto plazo, por sesión de conversación.
 - **Seguridad de contenido:** Amazon Bedrock Guardrails filtran la entrada y la salida del agente.
-- **Opcional:** buzón de preguntas en vivo durante la charla, con procesamiento asíncrono por SQS.
 
 ## Target users
 
-- **Estudiantes:** quieren entender el flujo spec-driven desde cero, con explicaciones paso a paso y glosario.
-- **Profesionales (desarrolladores y arquitectos):** quieren ver un flujo spec-driven de punta a punta, con detalle técnico y decisiones, y poder repetirlo en sus propios proyectos.
-- **Público general:** quiere una idea clara y breve de qué se hizo y por qué, sin jerga.
-- **Presentador (autor):** necesita un repositorio ordenado, con demos que funcionen y documentación al día para mostrar en vivo; tiene acceso a material interno y borradores que el resto no ve.
+- **Estudiantes (perfil Básico):** quieren entender el flujo spec-driven desde cero, con explicaciones paso a paso y glosario.
+- **Profesionales (perfil Técnico; desarrolladores y arquitectos):** quieren ver un flujo spec-driven de punta a punta, con detalle técnico y decisiones, y poder repetirlo en sus propios proyectos.
+- **Público general (perfil General):** quiere una idea clara y breve de qué se hizo y por qué, sin jerga.
+- **Ponente / presentador (autor):** necesita un repositorio ordenado, con demos que funcionen y documentación al día para mostrar en vivo; además puede preguntarle al agente qué fue lo más preguntado.
 - **Lectores posteriores del repo:** llegan sin haber asistido y necesitan entender los pasos y las decisiones leyendo solo `docs/`.
 
 ## Goals
@@ -32,7 +34,7 @@ La aplicación de demostración es un agente que responde preguntas sobre este m
 - Cada demo se puede reproducir desde cero siguiendo únicamente la documentación del repo, y su infraestructura se levanta y destruye con IaC. Hay una sola aplicación de demostración.
 - Todo caso de uso o caso de prueba implementado tiene su especificación en `docs/` con estado actualizado y cobertura verificada (`/coverage-check` sin gaps ni drift).
 - Los aprendizajes (pasos, buenas prácticas, dolores) quedan registrados en `docs/charla/` en el momento en que ocurren.
-- El agente responde según el perfil del usuario y nunca expone documentos de un nivel de acceso superior a su rol.
+- El agente responde según el perfil elegido por el usuario, y las herramientas de análisis solo las ejecuta el Ponente.
 
 ## Scope
 
@@ -41,7 +43,7 @@ La aplicación de demostración es un agente que responde preguntas sobre este m
 - Documentación AIUP completa: visión, requisitos, modelo de entidades, diagrama y especificaciones de casos de uso, casos de prueba.
 - La aplicación "Pregúntale al repo": un agente en Python con Strands Agents, ejecutado en Amazon Bedrock AgentCore.
 - Controles de costo como parte de la solución: cuotas por usuario, tope global, AWS Budgets con acción de cierre y destrucción del entorno tras cada sesión.
-- Infraestructura en AWS definida 100 % como código con Terraform: API Gateway, Lambda, Bedrock AgentCore (Runtime, Gateway, Memory, Identity), Bedrock Knowledge Bases, S3 y S3 Vectors, Cognito, Bedrock Guardrails, CloudWatch, SQS y Secrets Manager.
+- Infraestructura en AWS definida 100 % como código con Terraform: API Gateway, Lambda, Bedrock AgentCore (Runtime, Gateway, Memory, Identity), Bedrock Knowledge Bases, S3 y S3 Vectors, DynamoDB, CloudFront, Cognito, Bedrock Guardrails, CloudWatch, SQS y Secrets Manager.
 - Uso del servidor MCP de AWS para integrar herramientas de los servicios con el agente.
 - Registro de buenas prácticas y problemas encontrados durante el proceso.
 - Flujo de trabajo por ramas y PRs: cada spec, UC o TC nuevo en su rama, con merge a `main` solo tras pruebas, CI en verde y certificación.
@@ -57,7 +59,7 @@ La aplicación de demostración es un agente que responde preguntas sobre este m
 
 - La metodología es AIUP; `aiup-core` genera la documentación. El plugin `aiup-vaadin-jooq` no aplica porque el stack no es Vaadin/jOOQ.
 - Stack: Python 3.14 + Strands Agents. Se eligió porque es el framework de agentes de AWS, integra con más facilidad las herramientas de los servicios AWS y ofrece un servidor MCP.
-- Servicios AWS: API Gateway, Lambda, Bedrock AgentCore, Bedrock Knowledge Bases, S3 y S3 Vectors, Cognito, Bedrock Guardrails, CloudWatch, SQS y Secrets Manager, todos aprovisionados por Terraform. Región única `us-east-1`.
+- Servicios AWS: API Gateway, Lambda, Bedrock AgentCore, Bedrock Knowledge Bases, S3 y S3 Vectors, DynamoDB, CloudFront, Cognito, Bedrock Guardrails, CloudWatch, SQS y Secrets Manager, todos aprovisionados por Terraform. Región única `us-east-1`.
 - Modelo de lenguaje: Amazon Nova 2 Lite.
 - **Presupuesto: 50 USD en total** para todo el proyecto, con un aforo esperado de 50 participantes. Es un límite duro que se aplica con cuotas en runtime, alertas y destrucción del entorno tras cada sesión.
 - Nada se mergea a `main` sin PR, CI en verde, commits firmados, pruebas en verde y cobertura del spec certificada.
@@ -69,4 +71,4 @@ La aplicación de demostración es un agente que responde preguntas sobre este m
 - El 100 % de los UC en estado `Implemented` o superior tienen cobertura verificada sin drift entre spec, código y tests.
 - Las demos se ejecutan en vivo durante la charla sin intervención manual fuera de lo documentado.
 - El gasto total de AWS no supera 50 USD, con 50 participantes en la charla.
-- Una misma pregunta produce respuestas diferenciadas para los tres perfiles, y ninguna respuesta cita documentos de un nivel de acceso mayor al del rol del usuario.
+- Una misma pregunta produce respuestas diferenciadas para los tres perfiles, y un participante nunca puede ejecutar el top de preguntas ni leer conversaciones ajenas.
