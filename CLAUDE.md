@@ -83,7 +83,7 @@ Corte automático de presupuesto (NFR-014): `uv run python scripts/test_budget_c
 
 Observabilidad (`docs/charla/observabilidad.md`; el panel y las alarmas son opcionales y están fuera del alcance, su código está en `docs/charla/referencia/`): `uv run python scripts/show_trace.py` muestra la traza de la última pregunta (o `--request-id`) con el tiempo de cada tramo. La consola de AgentCore: CloudWatch → Observabilidad de GenAI → Bedrock AgentCore. Los spans y las preguntas quedan en `aws/spans` 30 días.
 
-Prueba de humo de punta a punta contra la API real (13 comprobaciones; se limpia sola y sirve de calentamiento): `uv run python scripts/smoke_test.py`. Tras `scripts/deploy_agent.sh`, haz commit de `infra/agent_image.auto.tfvars`: versiona la imagen desplegada.
+Prueba de humo de punta a punta contra la API real (15 comprobaciones; se limpia sola y sirve de calentamiento): `uv run python scripts/smoke_test.py`. Tras `scripts/deploy_agent.sh`, haz commit de `infra/agent_image.auto.tfvars`: versiona la imagen desplegada.
 
 Sincronizar el repositorio con la Knowledge Base: `aws lambda invoke --function-name spec-to-runtime-sync --payload '{}' --cli-binary-format raw-in-base64-out out.json`. Scripts sueltos: `PYTHONPATH=src uv run python ...` (el `.pth` oculto de macOS impide importar el paquete).
 
@@ -97,7 +97,7 @@ Cada subpaquete es un despliegue distinto; el flujo completo está en `docs/char
 
 - `api/` — Lambda detrás de API Gateway (Cognito): valida la entrada, aplica cuota y encola en SQS; expone el sondeo de respuestas, el historial y el top 10 del Ponente.
 - `orchestrator/` — Lambda disparada por SQS: llama al agente en AgentCore Runtime, revisa la salida con guardrails y va escribiendo el texto parcial en DynamoDB (`stream.py`, `formatting.py`).
-- `agent/` — el agente Strands que corre en el contenedor de AgentCore (`app.py` es la entrada, `factory.py` construye el agente por perfil, `retrieval.py` hace el RAG contra la Knowledge Base, `analytics.py` calcula el top 10). El agente no toca DynamoDB: las herramientas del Ponente las ejecuta AgentCore Gateway (FR-012, `docs/charla/agentcore-gateway.md`); `gateway.py` es el cliente MCP con SigV4 y `toolkit.py` la implementación, sin Strands porque corre en la Lambda `tools`.
+- `agent/` — el agente Strands que corre en el contenedor de AgentCore (`app.py` es la entrada, `factory.py` construye el agente por perfil, `retrieval.py` hace el RAG contra la Knowledge Base, `analytics.py` calcula el top 10). El agente no toca DynamoDB: las herramientas del Ponente las ejecuta AgentCore Gateway (FR-012, `docs/charla/agentcore-gateway.md`); `gateway.py` es el cliente MCP con SigV4 (dos targets: `ponente`, la Lambda, y `aws-docs`, el servidor MCP público de AWS) y `toolkit.py` la implementación, sin Strands porque corre en la Lambda `tools`.
 - `tools/` — Lambda target del Gateway (`handler.py`); reutiliza `agent/toolkit.py`, `analytics.py`, `retrieval.py` y `config.py`. El zip de las Lambdas (`infra/api.tf`) excluye por nombre el resto de `agent/`: si añades un módulo del agente que importe Strands, exclúyelo ahí también.
 - `sync/` — Lambda `spec-to-runtime-sync` que ingiere el repo de GitHub en la Knowledge Base (UC-003).
 - `auth/` — trigger pre-signup de Cognito (UC-001).

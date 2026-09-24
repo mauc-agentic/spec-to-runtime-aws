@@ -61,7 +61,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 |---|---|---|
 | FR-002, FR-003, FR-010, FR-011, FR-013 a FR-016, FR-018 a FR-023 | Implementado | Ver los UC |
 | FR-017 (herramientas solo para el Ponente) | Implementado | El rol sale del token; los participantes no reciben las herramientas |
-| **FR-012 (herramientas por AgentCore Gateway)** | **Parcial** | Las tres herramientas del Ponente se ejecutan detrás de Gateway (target Lambda, verificado con la prueba de humo). Falta el **target de servidor MCP de AWS** que menciona el requisito: ver `docs/charla/agentcore-gateway.md` |
+| FR-012 (herramientas por AgentCore Gateway) | Implementado | Dos targets: Lambda (las tres herramientas del Ponente) y el servidor MCP público de conocimiento de AWS (búsqueda en su documentación). Verificado con la prueba de humo y con el span de la llamada; ver `docs/charla/agentcore-gateway.md` |
 | FR-001, FR-004 | Parcial | TC-001 escrito (`Draft`, sin automatizar); falta una reproducción desde un clon limpio |
 | FR-005 a FR-007, FR-009 | Implementado | `docs/charla/` y el flujo por ramas y PR |
 | FR-008 (trazabilidad spec-código) | Parcial | Esta auditoría es la primera; falta cerrar los huecos |
@@ -72,7 +72,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 
 ## Pendiente, por prioridad para la charla (2026-09-26)
 
-1. **AgentCore Gateway (FR-012):** el target Lambda está hecho; decidir si se añade un target de servidor MCP de AWS o se enmienda el requisito para dejar solo Lambda.
+1. ~~AgentCore Gateway (FR-012)~~ Hecho el 2026-09-24 con los dos targets (Lambda y servidor MCP de AWS).
 2. ~~**TC-001**~~ Escrito en `docs/test_cases/TC-001-conversacion-y-analisis-del-ponente.md` (`Draft`, falta la revisión del autor). Sigue sin automatizarse: la web no tiene pruebas de navegador.
 3. ~~Cerrar los huecos de UC-004 A4, UC-005 A4 y UC-006 A4~~ Cerrados el 2026-09-24 (`docs/charla/huecos-a4.md`); faltan la prueba en navegador de los avisos y de "Mostrar más", y la de memoria caída de verdad.
 4. ~~Decidir las derivas~~ Resueltas el 2026-09-24: UC-004 A1 en código; UC-001, UC-002, UC-004 y UC-007 en la spec (UC-007 BR-002 en ambos).
