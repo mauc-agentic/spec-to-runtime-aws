@@ -92,10 +92,12 @@ def test_uc004_a6_guardrail_intervention_is_reported_as_blocked():
     assert events[-1] == {"type": "blocked"}
 
 
-def test_uc004_a7_agent_failure_is_reported_so_the_user_can_retry():
+def test_uc004_a7_agent_failure_is_reported_so_the_user_can_retry(caplog):
     events, _ = _collect(PAYLOAD, _passages(), [RuntimeError("boom")])
     assert events[-1]["type"] == "error"
     assert events[-1]["code"] == "agent_failed"
+    # NFR-007: el detalle queda en los logs aunque el participante solo vea el tipo de error
+    assert "agent_failed session_id=s1" in caplog.text and "boom" in caplog.text
 
 
 @pytest.mark.parametrize(
@@ -167,3 +169,13 @@ def test_uc004_retrieval_filters_low_relevance_and_maps_s3_paths():
 def test_uc004_br003_every_profile_forbids_inventing_reasons(profile):
     prompt = system_prompt(profile, Role.PARTICIPANT)
     assert "SOLO en los fragmentos" in prompt and "no infieras" in prompt
+
+
+def test_uc004_br005_hitting_the_length_limit_truncates_instead_of_failing():
+    from strands.types.exceptions import MaxTokensReachedException
+
+    events, _ = _collect(
+        PAYLOAD, _passages(), [{"data": "texto largo..."}, MaxTokensReachedException("tope")]
+    )
+    assert events[-1]["type"] == "done" and events[-1]["truncated"] is True
+    assert [e["type"] for e in events].count("error") == 0

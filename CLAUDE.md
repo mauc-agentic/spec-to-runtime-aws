@@ -70,4 +70,13 @@ terraform -chdir=infra/bootstrap init && terraform -chdir=infra/bootstrap apply 
 terraform -chdir=infra init && terraform -chdir=infra validate && terraform -chdir=infra plan
 ```
 
-Aún no hay comando de arranque local del agente ni de deploy a AgentCore; agrégalos aquí en el mismo cambio que los introduce. Detalle del ambiente en `docs/charla/preparacion-ambiente.md`.
+Agente en AgentCore Runtime (contenedor arm64, Python 3.14; el zip de AgentCore no admite 3.14):
+
+```bash
+scripts/deploy_agent.sh                                   # construye y sube la imagen a ECR (exige commit)
+terraform -chdir=infra apply -var agent_image_tag=<hash>  # crea o actualiza el Runtime
+```
+
+Sincronizar el repositorio con la Knowledge Base: `aws lambda invoke --function-name spec-to-runtime-sync --payload '{}' --cli-binary-format raw-in-base64-out out.json`. Scripts sueltos: `PYTHONPATH=src uv run python ...` (el `.pth` oculto de macOS impide importar el paquete).
+
+Aún no hay comando de arranque local del agente; agrégalos aquí en el mismo cambio que los introduce. Detalle del ambiente en `docs/charla/preparacion-ambiente.md`.
