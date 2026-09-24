@@ -5,13 +5,10 @@ herramienta en `context.client_context.custom["bedrockAgentCoreToolName"]`, con 
 `<target>___<herramienta>`.
 """
 
-import logging
 from functools import cache
 
 from spec_to_runtime.agent.config import Settings
 from spec_to_runtime.agent.toolkit import TOOL_NAMES, Toolkit
-
-logger = logging.getLogger(__name__)
 
 TARGET_SEPARATOR = "___"
 
@@ -30,5 +27,4 @@ def handler(event, context):
     name = tool_name(context)
     if name not in TOOL_NAMES:
         raise ValueError(f"Herramienta desconocida: {name}")
-    logger.info("tool=%s", name)
     return {"report": _toolkit().run(name, event or {})}

@@ -59,7 +59,7 @@ NAT Gateway, OpenSearch Serverless (costo mínimo mensual alto), throughput apro
 
 ## Corte automático al 90 % (NFR-014)
 
-`infra/budget_action.tf`. Al llegar al 90 % del presupuesto (45 USD), AWS Budgets adjunta a los roles del agente y del orquestador la política `spec-to-runtime-budget-cutoff`, que **niega** invocar modelos, guardrails, la Knowledge Base y el Runtime. El resto de permisos (DynamoDB, logs) se mantiene: así el sistema puede registrar el fallo y devolver la cuota. La acción es automática y avisa por correo.
+`infra/budget_action.tf`. Al llegar al 90 % del presupuesto (45 USD), AWS Budgets adjunta a los roles del agente, del orquestador y de las herramientas (Lambda `tools`) la política `spec-to-runtime-budget-cutoff`, que **niega** invocar modelos, guardrails, la Knowledge Base y el Runtime. El resto de permisos (DynamoDB, logs) se mantiene: así el sistema puede registrar el fallo y devolver la cuota. La acción es automática y avisa por correo.
 
 **Es la red de seguridad de último recurso, no una protección en tiempo real.** Facturación tiene un retraso de 8 a 24 horas: el gasto de una mala tarde puede tardar en verse. La protección en tiempo real son las cuotas de la API (25 preguntas por participante y día, 3.000 en total, 10 consultas simultáneas).
 
