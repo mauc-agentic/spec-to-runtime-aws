@@ -6,25 +6,11 @@
   <title>Pregúntale al repo</title>
   <meta name="description" content="Un agente que responde con lo que está escrito en el repositorio de la charla: visión, requisitos, especificaciones y aprendizajes.">
   <meta name="theme-color" content="#090a2c">
-  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="aws-ug-valle-del-cauca.png" type="image/png">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
   <a class="skip" href="#main">Ir al contenido</a>
-
-  <!-- Dibujos reutilizables: hexágono, caña de azúcar, nube y signo más. -->
-  <svg class="sprite" width="0" height="0" focusable="false" aria-hidden="true">
-    <defs>
-      <linearGradient id="blade" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0" stop-color="#f6f4ff"/>
-        <stop offset="1" stop-color="#a9a2cf"/>
-      </linearGradient>
-    </defs>
-    <symbol id="mark" viewBox="0 0 40 46">
-      <path d="M20 2 37 12v22L20 44 3 34V12Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
-      <path d="M20 31c0-9 0-13-3-19M20 31c1-8 3-12 7-16M20 31c-3-5-7-8-11-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
-    </symbol>
-  </svg>
 
   <main id="main">
     <!-- Acceso -->
@@ -68,7 +54,7 @@
     <section id="view-chat" class="chat" hidden aria-label="Chat con el agente">
       <header class="bar">
         <div class="brand">
-          <svg class="mark" aria-hidden="true"><use href="#mark"/></svg>
+          <img class="mark" src="aws-ug-valle-del-cauca.png" width="35" height="40" alt="">
           <span>Pregúntale al repo</span>
         </div>
         <nav class="bar-actions" aria-label="Acciones">
@@ -91,6 +77,7 @@
         <p class="lilac">Herramientas del ponente</p>
         <div class="chips">
           <button type="button" class="chip" id="btn-top">Top 10 de preguntas</button>
+          <button type="button" class="chip" id="btn-activity">Actividad de los participantes</button>
           <button type="button" class="chip" id="btn-sync">Sincronizar documentos</button>
           <button type="button" class="chip" id="btn-sync-status">Estado de la sincronización</button>
         </div>
