@@ -13,7 +13,7 @@
 ## Preconditions
 
 - Participant has a signed-in account (see UC-001)
-- Participant has chosen an answer profile for the current conversation (see UC-002)
+- The current conversation has an answer profile: General unless the participant chose another one (see UC-002)
 - The repository documents have been synchronized at least once (see UC-003)
 - The daily usage limit of the participant and the overall project limit have not been reached
 

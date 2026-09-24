@@ -124,7 +124,7 @@ Only people with the Ponente role can request the top 10. Participants who ask t
 
 ### BR-002: Period
 
-When the Ponente names no period, the analysis covers the whole event since the first question. The Ponente may narrow it, for example to the last hour or to today. The analysis never covers more than the questions stored for the project.
+When the Ponente names no period, the analysis covers the whole event since the first question. The Ponente may narrow it, for example to the last hour or to today. The analysis covers at most the 1,000 most recent questions of the period, which is more than the expected audience asks; when the period holds more, the report says that only the 1,000 most recent were analyzed.
 
 ### BR-003: Grouping
 
@@ -148,7 +148,7 @@ Each Ponente request counts in the Ponente's daily usage, which allows up to 100
 
 ### BR-008: Waiting Time
 
-The Ponente sees the status of the request within 2 seconds. The report should be shown within 20 seconds for most requests; after 90 seconds the request is considered failed.
+The Ponente sees the status of the request within 2 seconds. The report should be shown within 20 seconds for most requests; after 60 seconds, the general limit for every request (see UC-004 BR-007), the request is considered failed.
 
 ### BR-009: Content Rules
 

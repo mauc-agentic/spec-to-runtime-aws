@@ -33,7 +33,8 @@ const safe = (storage) => ({
 const session = safe(window.sessionStorage);
 const prefs = safe(window.localStorage);
 
-const state = { token: null, isSpeaker: false, sessionId: null, busy: false, mode: "login" };
+// `pending`: la pregunta que no se pudo enviar porque la sesión venció, con la cuenta a la que pertenece.
+const state = { token: null, isSpeaker: false, sessionId: null, busy: false, mode: "login", pending: null };
 const api = createApi(() => state.token, () => logout("Tu sesión terminó. Entra de nuevo."));
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -102,12 +103,24 @@ function enterChat(token) {
   const radio = saved && $(`input[name="profile"][value="${saved}"]`);
   if (radio) radio.checked = true;
   resetConversation();
+  restorePending(token);
   $("#prompt").focus();
+}
+
+// UC-004 A1: tras volver a entrar con la misma cuenta, la pregunta escrita sigue en el cuadro.
+function restorePending(token) {
+  const { pending } = state;
+  state.pending = null;
+  if (!pending || pending.sub !== cognito.subOf(token)) return;
+  $("#prompt").value = pending.prompt;
+  autosize();
+  toast("Tu sesión había terminado. Tu pregunta sigue escrita: envíala de nuevo.");
 }
 
 function logout(message) {
   state.token = null;
   state.sessionId = null;
+  if (!message) state.pending = null; // salir a propósito descarta la pregunta escrita
   session.del("token");
   $("#history").hidden = true;
   $("#view-chat").hidden = true;
@@ -297,8 +310,10 @@ async function ask(prompt, existing) {
     message = addAgent();
   }
   setPhase(message, "Queued");
+  const owner = cognito.subOf(state.token);
+  let sent = null;
   try {
-    const sent = await api.ask(prompt, currentProfile(), state.sessionId);
+    sent = await api.ask(prompt, currentProfile(), state.sessionId);
     state.sessionId = sent.session_id;
     if (sent.masked && !existing) lastUserBubble().textContent = sent.prompt; // UC-004 A4: se guardó enmascarada
     addNotices(message, sent.masked ? ["personal_data_masked"] : []);
@@ -310,6 +325,8 @@ async function ask(prompt, existing) {
     }
 
   } catch (error) {
+    // UC-004 A1: si la sesión venció antes de aceptar la pregunta, no se pierde lo escrito.
+    if (error.status === 401 && !sent) state.pending = { sub: owner, prompt };
     fail(message, explain(error), error.status === 429 ? null : () => ask(prompt, message));
   } finally {
     setBusy(false);
