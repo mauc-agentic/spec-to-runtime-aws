@@ -32,7 +32,7 @@ Con el guardrail y Nova 2 Lite reales, un fragmento simulado y sin memoria:
 ## Limitaciones conocidas
 
 - **Probado con AWS real:** la memoria de AgentCore y el despliegue en Runtime (ver `docs/charla/agentcore-runtime.md`). **Sin probar todavía:** la herramienta `top_preguntas` contra DynamoDB con datos reales.
-- **FR-012 pendiente:** las herramientas del Ponente son locales; el requisito pide exponerlas por AgentCore Gateway.
+- **FR-012 (parcial):** las herramientas del Ponente ya se ejecutan por AgentCore Gateway (`agentcore-gateway.md`); falta decidir el target de servidor MCP de AWS.
 - **El análisis cubre como máximo las 1.000 preguntas más recientes** y lo informa con el total analizado; con el aforo previsto (unas 750) alcanza. UC-007 BR-002 dice "todas las almacenadas", así que hay que decidir si se sube el tope o se ajusta la spec.
 - **`MIN_RELEVANCE` calibrado en 0,66** con el corpus real (ver `docs/charla/uc-003-sincronizacion.md`); el margen frente a preguntas sin relación es estrecho.
 

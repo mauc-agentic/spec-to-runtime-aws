@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Stack:** Python 3.14 + Strands Agents (framework de agentes de AWS), ejecutado en Bedrock AgentCore con el modelo **Amazon Nova 2 Lite** (`us.amazon.nova-2-lite-v1:0`, región `us-east-1`), con API Gateway, Lambda, SQS, CloudWatch y Secrets Manager. Toda la infraestructura va como IaC con **Terraform** (además: Bedrock Knowledge Bases, S3 Vectors, Cognito y Bedrock Guardrails) (decisión en `docs/charla/iac-terraform.md`). Fecha de la charla: **2026-09-26**.
 
-Plugins de Claude Code: `aiup-core` (documentación AIUP, independiente del stack) y `aws-agents` (skills `agents-get-started`, `agents-build`, `agents-deploy`, `agents-debug`, etc. para AgentCore). `aws-agents` (marketplace `aws/agent-toolkit-for-aws`) ya está instalado y habilitado en `.claude/settings.json`. `aiup-vaadin-jooq` **no aplica** a este stack y está deshabilitado en `.claude/settings.json`: no uses `/implement`, `/flyway-migration` ni los skills de tests Vaadin/Hilla. El código aún no existe; no asumas nada más allá de lo que esté en el repo o en las specs aprobadas.
+Plugins de Claude Code: `aiup-core` (documentación AIUP, independiente del stack) y `aws-agents` (skills `agents-get-started`, `agents-build`, `agents-deploy`, `agents-debug`, etc. para AgentCore). `aws-agents` (marketplace `aws/agent-toolkit-for-aws`) ya está instalado y habilitado en `.claude/settings.json`. `aiup-vaadin-jooq` **no aplica** a este stack y está deshabilitado en `.claude/settings.json`: no uses `/implement`, `/flyway-migration` ni los skills de tests Vaadin/Hilla. No asumas nada más allá de lo que esté en el repo o en las specs aprobadas.
 
 **Estado de los specs:** la visión, los requisitos, `docs/entity_model.md` y el diagrama `docs/use_cases.puml` ya cubren el dominio **"Pregúntale al repo"**: página web → API Gateway (Cognito) → SQS → Lambda → agente con RAG (Bedrock Knowledge Base + S3 Vectors sobre todo el repo de GitHub), AgentCore Gateway y Memory, DynamoDB para historial y cuotas, Bedrock Guardrails. Los participantes eligen perfil (Básico, Técnico, General); el rol Ponente accede al top 10 de preguntas. Los siete UCs (UC-001 a UC-007) están en `Implemented` (aprobados por el autor el 2026-09-24, aunque se implementaron antes de aprobarse); ninguno está en `Tested` porque quedan huecos y derivas: ver `docs/charla/cobertura-ucs.md`. Los umbrales `Needs review` (NFR-004, NFR-011) están por confirmar. Ver `docs/charla/dominio-agente.md` y `docs/charla/arquitectura-flujo.md`.
 
@@ -87,4 +87,20 @@ Prueba de humo de punta a punta contra la API real (11 comprobaciones; se limpia
 
 Sincronizar el repositorio con la Knowledge Base: `aws lambda invoke --function-name spec-to-runtime-sync --payload '{}' --cli-binary-format raw-in-base64-out out.json`. Scripts sueltos: `PYTHONPATH=src uv run python ...` (el `.pth` oculto de macOS impide importar el paquete).
 
-Aún no hay comando de arranque local del agente; agrégalos aquí en el mismo cambio que los introduce. Detalle del ambiente en `docs/charla/preparacion-ambiente.md`.
+Vaciar datos de ensayo antes de la charla (preguntas, cuotas, memoria de AgentCore; conserva Ponente, KB y documentos): `uv run python scripts/reset_event_data.py` simula; con `--yes` borra (y `--users` borra también las cuentas que no son del Ponente). Aún no hay comando de arranque local del agente; agrégalos aquí en el mismo cambio que los introduce.
+
+CI (`.github/workflows`): ruff + pytest, `terraform fmt/validate` + checkov sobre `infra/` y el job de web. Corre lo mismo en local antes de abrir el PR. Detalle del ambiente en `docs/charla/preparacion-ambiente.md`.
+
+## Arquitectura del código (`src/spec_to_runtime`)
+
+Cada subpaquete es un despliegue distinto; el flujo completo está en `docs/charla/arquitectura-flujo.md` (opción C: polling con avance parcial).
+
+- `api/` — Lambda detrás de API Gateway (Cognito): valida la entrada, aplica cuota y encola en SQS; expone el sondeo de respuestas, el historial y el top 10 del Ponente.
+- `orchestrator/` — Lambda disparada por SQS: llama al agente en AgentCore Runtime, revisa la salida con guardrails y va escribiendo el texto parcial en DynamoDB (`stream.py`, `formatting.py`).
+- `agent/` — el agente Strands que corre en el contenedor de AgentCore (`app.py` es la entrada, `factory.py` construye el agente por perfil, `retrieval.py` hace el RAG contra la Knowledge Base, `analytics.py` calcula el top 10). El agente no toca DynamoDB: las herramientas del Ponente las ejecuta AgentCore Gateway (FR-012, `docs/charla/agentcore-gateway.md`); `gateway.py` es el cliente MCP con SigV4 y `toolkit.py` la implementación, sin Strands porque corre en la Lambda `tools`.
+- `tools/` — Lambda target del Gateway (`handler.py`); reutiliza `agent/toolkit.py`, `analytics.py`, `retrieval.py` y `config.py`. El zip de las Lambdas (`infra/api.tf`) excluye por nombre el resto de `agent/`: si añades un módulo del agente que importe Strands, exclúyelo ahí también.
+- `sync/` — Lambda `spec-to-runtime-sync` que ingiere el repo de GitHub en la Knowledge Base (UC-003).
+- `auth/` — trigger pre-signup de Cognito (UC-001).
+- `common/` — estado compartido en DynamoDB (`requests_store`, `quota`), métricas y trazas.
+
+`infra/*.tf` está dividido por servicio (un archivo por área: `api.tf`, `agentcore.tf`, `knowledge_base.tf`...); los tests de `tests/` se nombran `test_ucNNN_*` según el UC que cubren.

@@ -1,14 +1,21 @@
 # API y orquestador (FR-010, FR-011, UC-004): web -> API Gateway (JWT de Cognito) -> Lambda api
 # -> SQS -> Lambda orquestadora -> AgentCore Runtime. El navegador consulta el resultado cada ~1 s.
 
-# Un solo paquete con el código de las tres Lambdas (sync, api y orquestador). Sin el agente
+# Un solo paquete con el código de las cuatro Lambdas (sync, api, orquestador y tools). Sin el agente
 # (va en el contenedor) ni el trigger de Cognito (tiene su propio paquete).
 data "archive_file" "app" {
   type        = "zip"
   source_dir  = "${path.module}/../src"
   output_path = "${path.module}/.build/app.zip"
   excludes = [
-    "spec_to_runtime/agent/**",
+    # Del paquete del agente, la Lambda `tools` solo necesita toolkit, analytics, retrieval y config
+    # (sin Strands); el resto va en el contenedor.
+    "spec_to_runtime/agent/app.py",
+    "spec_to_runtime/agent/factory.py",
+    "spec_to_runtime/agent/gateway.py",
+    "spec_to_runtime/agent/handler.py",
+    "spec_to_runtime/agent/profiles.py",
+    "spec_to_runtime/agent/telemetry.py",
     "spec_to_runtime/auth/**",
     # Los .pyc dependen de la máquina y cambiarían el hash del paquete entre equipos.
     "**/__pycache__/**",

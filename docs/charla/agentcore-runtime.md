@@ -57,7 +57,7 @@ Frente a NFR-011 (estado en ≤ 2 s y respuesta completa en ≤ 10 s): se cumple
 
 ## Pendiente
 
-- Exponer las herramientas del Ponente por AgentCore Gateway (FR-012); hoy son locales.
+- ~~Exponer las herramientas del Ponente por AgentCore Gateway (FR-012)~~ Hecho: ver `agentcore-gateway.md`.
 - API Gateway con Cognito, SQS y la Lambda orquestadora (lee el stream con `read1`, escribe el texto parcial en DynamoDB y aplica el límite de sesión de 24 h).
 - Acción de presupuesto que quita al rol del agente el permiso de invocar modelos al 90 % (NFR-014): el rol ya existe.
 - Calentar el Runtime antes de la charla.

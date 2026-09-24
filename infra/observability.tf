@@ -45,6 +45,7 @@ locals {
     api          = aws_iam_role.api.name
     orchestrator = aws_iam_role.orchestrator.name
     sync         = aws_iam_role.sync.name
+    tools        = aws_iam_role.tools.name
     pre_signup   = aws_iam_role.pre_signup.name
   }
 }

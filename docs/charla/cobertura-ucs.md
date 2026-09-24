@@ -61,7 +61,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 |---|---|---|
 | FR-002, FR-003, FR-010, FR-011, FR-013 a FR-016, FR-018 a FR-023 | Implementado | Ver los UC |
 | FR-017 (herramientas solo para el Ponente) | Implementado | El rol sale del token; los participantes no reciben las herramientas |
-| **FR-012 (herramientas por AgentCore Gateway)** | **Parcial** | Las herramientas del Ponente son **locales**, no están detrás de Gateway. Es el requisito de prioridad alta más grande sin cumplir |
+| **FR-012 (herramientas por AgentCore Gateway)** | **Parcial** | Las tres herramientas del Ponente se ejecutan detrás de Gateway (target Lambda, verificado con la prueba de humo). Falta el **target de servidor MCP de AWS** que menciona el requisito: ver `docs/charla/agentcore-gateway.md` |
 | FR-001, FR-004 | Parcial | Falta el caso de prueba TC-001 y una reproducción desde un clon limpio |
 | FR-005 a FR-007, FR-009 | Implementado | `docs/charla/` y el flujo por ramas y PR |
 | FR-008 (trazabilidad spec-código) | Parcial | Esta auditoría es la primera; falta cerrar los huecos |
@@ -72,7 +72,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 
 ## Pendiente, por prioridad para la charla (2026-09-26)
 
-1. **AgentCore Gateway (FR-012):** decidir si se implementa o se enmienda el requisito.
+1. **AgentCore Gateway (FR-012):** el target Lambda está hecho; decidir si se añade un target de servidor MCP de AWS o se enmienda el requisito para dejar solo Lambda.
 2. **TC-001:** el caso de prueba de punta a punta que encadena UC-001, UC-004, UC-005, UC-006 y UC-007.
 3. Cerrar los **huecos de UC-004 A4, UC-005 A4 y UC-006 A4**, o dejarlos como alcance declarado.
 4. Decidir las **derivas** (UC-001 A3/BR-005, UC-002 A1, UC-004 A1, UC-007 BR-002/BR-008): cambiar el código o ajustar la spec.
