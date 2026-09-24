@@ -20,7 +20,7 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 
 - [x] Calidad de las respuestas (decisión opción 1, 2026-09-24): `tests/` y `scripts/` ya no se indexan. «¿Qué es AIUP?» y «¿Cuánto cuesta la demo?» responden bien y la pregunta de instalación ya no inventa «Python 3.8». Detalle en `pruebas-navegador.md`.
 - [x] Pregunta de instalación (2026-09-24): tras el README no bastó; con las bitácoras fuera del índice y `docs/faq.md`, 3 de 3 respuestas por la API traen `uv sync`, `uv run pytest` y Python 3.14. Los cinco botones de ejemplo responden bien.
-- [ ] **Yo, tras mergear el PR del FAQ:** sincronizar la KB desde `main` (reemplaza la copia de prueba de `docs/faq.md` subida a mano) y repetir los cinco botones.
+- [x] Tras mergear el FAQ (#35), la KB se sincronizó desde `main` (`docs/faq.md` indexado, 0 bitácoras, `tests/` ni `scripts/`) y las cinco preguntas de ejemplo, repetidas por la API real, respondieron bien.
 
 - [ ] **Tú:** pulsar «Sincronizar documentos» en la web como Ponente y ver que muestra el estado sin error (la prueba de `POST` fue por la API, no por el botón).
 - [ ] **Tú:** probar la web en un celular físico (formato de las respuestas, teclado, historial).
@@ -38,7 +38,7 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 - [ ] **Tú:** revisar TC-001 (`Draft` → `Reviewed` / `Approved`).
 - [ ] **Tú:** decidir sobre UC-008 (búsqueda en la documentación de AWS) o enmendar UC-004 BR-003.
 - [x] Pruebas de navegador en vivo de UC-002 y UC-004 BR-009 (2026-09-24): ver `pruebas-navegador.md`. Encontraron y corrigieron un defecto de numeración de listas.
-- [ ] **Tú, con el asistente mirando:** UC-001 A2 (contraseña incorrecta): cierra sesión, escribe una contraseña equivocada y el asistente captura el mensaje. UC-001 A6 exige crear cuentas y no se hace.
+- [x] UC-001 A2 (contraseña incorrecta) verificado en un navegador real el 2026-09-24: mensaje genérico, igual para cuenta existente e inexistente. UC-001 A6 exige crear cuentas y no se hizo.
 - [ ] **Automatizar** esas pruebas de navegador (Playwright, con el API y Cognito simulados); hoy la web solo tiene tests de sus módulos puros.
 - [ ] **Yo:** automatizar TC-001 (depende de lo anterior y de que el login pueda hacerse sin que yo escriba contraseñas; ver el aprendizaje en `huecos-a4.md`).
 - [ ] **Yo:** test de UC-005 A3/BR-001 (ventana de 10 interacciones; hoy es solo configuración).
