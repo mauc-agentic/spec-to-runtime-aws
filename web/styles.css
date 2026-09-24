@@ -172,7 +172,14 @@ button { font: inherit; cursor: pointer; }
 .speaker { padding: 0 1rem; }
 .speaker .lilac { margin: .75rem 0 .4rem; font-size: 1rem; }
 
-.scroller { flex: 1; overflow-y: auto; padding-top: .75rem; overscroll-behavior: contain; }
+.scroller {
+  flex: 1;
+  overflow-y: auto;
+  padding-top: .75rem;
+  overscroll-behavior: contain;
+  /* Difumina el borde superior: el texto no se corta en seco bajo el selector de perfil. */
+  mask-image: linear-gradient(to bottom, transparent 0, #000 16px);
+}
 .empty { padding: 1rem 1rem 0; }
 .empty .lilac { margin: 0 0 .5rem; }
 .empty p { margin: 0 0 1rem; color: var(--mist); }

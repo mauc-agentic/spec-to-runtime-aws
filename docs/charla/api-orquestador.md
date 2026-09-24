@@ -60,6 +60,9 @@ El registro no pasa por la API: la web llama a Cognito con el código del evento
 - **Casi degrado el agente sin darme cuenta:** al planificar pasé una etiqueta de imagen vieja y el plan proponía "actualizar el Runtime". Lo vi al leer el plan; ahora la etiqueta está versionada.
 - **La prueba dejó 5 preguntas en la base,** que habrían contaminado el top 10 real. Se borraron y el script de humo ya se limpia solo.
 
+- **El top 10 buscaba por el día equivocado (encontrado al reportar el autor "no encontré preguntas"):** las preguntas se guardan con el día local de Colombia y el análisis buscaba por fecha UTC. Por la tarde-noche colombiana, cuando en UTC ya es el día siguiente, no encontraba nada: justo la hora de la charla (a las 8 p. m. del sábado 26 se guardaban como "26" y se buscaba "27"). Pasaba desapercibido porque mis pruebas corrían de madrugada, cuando ambos días coinciden. Ahora `local_days` calcula los días en hora de Colombia, con un test de regresión que muerde. **Regla:** toda fecha que sea clave de partición se calcula en un solo lugar y con una sola zona horaria.
+- **Las preguntas del ponente no cuentan en el top 10** (UC-007): por eso un ponente que prueba solo, con su propia cuenta, ve "No encontré preguntas de participantes". El mensaje ahora lo explica. Para ensayar hay que preguntar desde una cuenta de participante.
+
 ## Aprendizajes / dolores
 
 - **Los tests con `moto` valen más que los fakes:** DynamoDB simulado con transacciones y condiciones reales confirma que un rechazo no deja contadores a medias y que el tope global manda sobre el diario.

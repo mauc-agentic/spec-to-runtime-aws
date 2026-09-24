@@ -8,6 +8,8 @@ Es una página estática sin framework ni paso de compilación (HTML, CSS y Java
 
 Tomada del cartel del primer meetup de AWS User Group Valle del Cauca: degradado de ciruela (arriba a la izquierda) a azul noche y cobalto (abajo a la derecha), títulos y acentos en lila, tipografía limpia sin serifas con mucho contraste de peso, y como pieza central el logo de la comunidad, con su hexágono, la caña de azúcar y las notas. La imagen del logo es la oficial de la comunidad, la aporta el autor y no se ha modificado. El resto es diseño propio.
 
+El logo oficial se usa también en el encabezado del chat y como avatar del agente (y como icono de la pestaña): el primer despliegue solo lo tenía en el acceso y el resto seguía con mi dibujo, que se retiró por completo.
+
 Decisiones de diseño: un solo elemento memorable (el logo); nada de tarjetas idénticas, etiquetas en mayúsculas ni numeraciones decorativas; los botones dicen lo que hacen ("Entrar", "Enviar", "Intentar de nuevo"); en el acceso el formulario va a la izquierda y el logo a la derecha, como en el cartel, y en celular el logo pasa arriba.
 
 ## Pantallas
@@ -35,8 +37,12 @@ Con Chrome: registro desde la interfaz con el código del evento, inicio de sesi
 - El título de mi primer hexágono se salía del hueco porque abajo el hexágono se estrecha, y un signo "+" se solapaba con el texto.
 - Un primer test de XSS tenía una aserción mal escrita que no comprobaba nada; se reescribió para exigir que el único atributo posible sea el de un enlace https exacto.
 
+- **Un error de la primera versión que solo la prueba real del autor destapó:** el logo oficial estaba en el acceso, pero el encabezado y el avatar seguían con el dibujo. Al reemplazar un elemento hay que buscar todos sus usos (`grep`), no solo el que se ve primero.
+
 ## Aprendizajes / dolores
 
+- El primer clic sobre un campo o botón en la automatización del navegador a veces solo enfoca el elemento: si no pasa nada, hay que repetirlo.
+- Un borde superior sin transición corta el texto en seco bajo el selector de perfil; se difumina con `mask-image`.
 - Node necesita `"type": "module"` en `web/package.json` para importar el `.js` como módulo en los tests.
 - La CSP sin `unsafe-inline` prohíbe `style="..."` y `<script>` en línea, pero permite cambiar `element.style` desde JavaScript, que es lo único que usa el autoajuste del cuadro de texto.
 - Sin caché en CloudFront (política `Managed-CachingDisabled`): el sitio pesa unos KB y así los cambios se ven al instante, sin invalidaciones.
