@@ -224,6 +224,7 @@ button { font: inherit; cursor: pointer; }
 .md hr { margin: .9rem 0; border: 0; border-top: 1px solid var(--line); }
 .md blockquote { padding-left: .8rem; border-left: 3px solid var(--violet); color: var(--mist); }
 .retry { margin-top: .6rem; }
+.trace-link { display: inline-block; margin-top: .6rem; color: var(--lilac); font-size: .85rem; text-underline-offset: 3px; }
 
 .composer {
   padding: .75rem 1rem calc(.75rem + env(safe-area-inset-bottom));

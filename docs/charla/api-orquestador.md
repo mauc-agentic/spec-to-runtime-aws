@@ -79,5 +79,6 @@ El registro no pasa por la API: la web llama a Cognito con el código del evento
 
 - La web (S3 y CloudFront) y acotar CORS.
 - Exponer las herramientas del Ponente por AgentCore Gateway (FR-012).
+- Observabilidad de punta a punta: hecha (`docs/charla/observabilidad.md`).
 - Solicitudes atascadas: si la orquestadora muriera a mitad, la solicitud quedaría en `Processing`; falta un barrido que la marque como fallida.
 - Activar la etiqueta de costo del presupuesto (`activate_cost_allocation_tag`).

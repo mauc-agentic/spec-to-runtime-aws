@@ -64,7 +64,8 @@ def test_the_api_puts_the_trace_header_on_the_queue_message_so_the_trace_is_not_
     sent = json.loads(message["Body"])
     assert sent["request_id"] == body["request_id"] and sent["created_at"]
     item = requests_store.get_request(deps.table, "u1", body["request_id"])
-    assert item["trace_id"] == "1-5759e988-bd862e3fe1be46a994272793"
+    assert item["api_trace_id"] == "1-5759e988-bd862e3fe1be46a994272793"
+    assert "trace_id" not in item  # la traza principal la fija el orquestador
 
 
 def test_without_active_tracing_the_api_sends_no_trace_attribute(deps, monkeypatch):
@@ -74,23 +75,30 @@ def test_without_active_tracing_the_api_sends_no_trace_attribute(deps, monkeypat
         QueueUrl=deps.queue_url, MessageSystemAttributeNames=["AWSTraceHeader"]
     )["Messages"][0]
     assert "AWSTraceHeader" not in message.get("Attributes", {})
-    assert "trace_id" not in requests_store.get_request(deps.table, "u1", body["request_id"])
+    item = requests_store.get_request(deps.table, "u1", body["request_id"])
+    assert "trace_id" not in item and "api_trace_id" not in item
 
 
-def test_only_the_speaker_gets_the_trace_id_to_open_the_trace(deps, monkeypatch):
-    monkeypatch.setenv("_X_AMZN_TRACE_ID", XRAY)
+def test_only_the_speaker_gets_the_main_trace_id_to_open_the_trace(deps):
     _, mine = ask(deps)
+    # El orquestador fija la traza principal al empezar.
+    requests_store.update_request(
+        deps.table, "u1", mine["request_id"], {"trace_id": "1-aaaaaaaa-bbbbbbbbbbbbbbbbbbbbbbbb"}
+    )
     path = {"request_id": mine["request_id"]}
     as_participant = json.loads(
         api.get_request(event("GET /requests/{request_id}", "u1", path=path))["body"]
     )
-    assert "trace_id" not in as_participant
+    assert "trace_id" not in as_participant and "api_trace_id" not in as_participant
     _, theirs = ask(deps, user="p1", groups="[Ponente]")
+    requests_store.update_request(
+        deps.table, "p1", theirs["request_id"], {"trace_id": "1-cccccccc-dddddddddddddddddddddddd"}
+    )
     path = {"request_id": theirs["request_id"]}
     as_speaker = json.loads(
         api.get_request(event("GET /requests/{request_id}", "p1", "[Ponente]", path=path))["body"]
     )
-    assert as_speaker["trace_id"] == "1-5759e988-bd862e3fe1be46a994272793"
+    assert as_speaker["trace_id"] == "1-cccccccc-dddddddddddddddddddddddd"
 
 
 # --- costura 2: el orquestador continúa la traza hacia el Runtime --------------------------------
@@ -182,3 +190,11 @@ def test_the_agent_annotations_are_harmless_without_an_opentelemetry_sdk():
         telemetry.annotate(profile="Basic", top_score=None, passages=3)
         with telemetry.span("rag.retrieve", top_k=6) as span:
             assert span is not None
+
+
+def test_the_orchestrator_records_its_own_trace_as_the_main_one(setup, monkeypatch):
+    monkeypatch.setenv("_X_AMZN_TRACE_ID", XRAY)
+    deps_, message, aws = setup(HAPPY)
+    orch.process(message, deps_, now=lambda: NOW)
+    item = requests_store.get_request(aws.requests, "u1", "r1")
+    assert item["trace_id"] == "1-5759e988-bd862e3fe1be46a994272793"

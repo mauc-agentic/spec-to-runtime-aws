@@ -64,6 +64,12 @@ def _finish(deps: Deps, message: dict, status: str, fields: dict, now) -> None:
         quota.release(deps.usage_client, deps.usage_table, message["user_id"], message["day"])
 
 
+def _trace_fields() -> dict:
+    """Traza principal de la pregunta (orquestador + agente); enlaza a la traza de la API."""
+    trace_id = tracing.root_trace_id(tracing.xray_header())
+    return {"trace_id": trace_id} if trace_id else {}
+
+
 def _queue_wait_ms(message: dict, now) -> float | None:
     """Cuánto esperó la solicitud en la cola (el mensaje trae la hora en que la API la aceptó)."""
     created = message.get("created_at")
@@ -101,7 +107,7 @@ def process(message: dict, deps: Deps, *, clock=time.monotonic, now=requests_sto
             deps.table,
             user_id,
             request_id,
-            {"status": "Processing", "phase": "Processing"},
+            {"status": "Processing", "phase": "Processing", **_trace_fields()},
             only_if_status="Queued",
         )
     except ClientError as error:

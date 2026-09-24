@@ -114,7 +114,9 @@ def submit_question(event: dict, now: datetime | None = None) -> dict:
     trace_header = tracing.xray_header()
     trace_id = tracing.root_trace_id(trace_header)
     if trace_id:
-        item["trace_id"] = trace_id  # solo lo ve el Ponente (enlace a la traza en la web)
+        # Traza de esta Lambda. SQS no continúa la traza sino que la enlaza: la traza principal
+        # (orquestador + agente) la fija el orquestador en `trace_id` y enlaza a esta.
+        item["api_trace_id"] = trace_id
 
     try:
         quota.reserve(deps.usage_client, deps.usage_table, user_id, role, now, deps.project_cap)

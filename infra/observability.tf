@@ -55,3 +55,48 @@ resource "aws_iam_role_policy_attachment" "xray" {
   role       = each.value
   policy_arn = "arn:aws:iam::aws:policy/AWSXRayDaemonWriteAccess"
 }
+
+# --- AgentCore Memory: logs y trazas propios del servicio ------------------------------------------
+# Las llamadas a la memoria ya aparecen como spans dentro de la traza del agente; esto añade los
+# registros y trazas que emite el propio servicio (pestaña "Memoria" de la consola de AgentCore).
+resource "aws_cloudwatch_log_group" "memory" {
+  # checkov:skip=CKV_AWS_158:Logs con cifrado por defecto; una CMK añade costo fijo (NFR-012)
+  # checkov:skip=CKV_AWS_338:Retención de 14 días: los logs solo sirven durante el evento
+  name              = "/aws/vendedlogs/bedrock-agentcore/memory/APPLICATION_LOGS/${aws_bedrockagentcore_memory.agent.id}"
+  retention_in_days = 14
+}
+
+resource "aws_cloudwatch_log_delivery_source" "memory_logs" {
+  name         = "${local.name}-memory-logs"
+  log_type     = "APPLICATION_LOGS"
+  resource_arn = aws_bedrockagentcore_memory.agent.arn
+}
+
+resource "aws_cloudwatch_log_delivery_destination" "memory_logs" {
+  name = "${local.name}-memory-logs"
+
+  delivery_destination_configuration {
+    destination_resource_arn = aws_cloudwatch_log_group.memory.arn
+  }
+}
+
+resource "aws_cloudwatch_log_delivery" "memory_logs" {
+  delivery_source_name     = aws_cloudwatch_log_delivery_source.memory_logs.name
+  delivery_destination_arn = aws_cloudwatch_log_delivery_destination.memory_logs.arn
+}
+
+resource "aws_cloudwatch_log_delivery_source" "memory_traces" {
+  name         = "${local.name}-memory-traces"
+  log_type     = "TRACES"
+  resource_arn = aws_bedrockagentcore_memory.agent.arn
+}
+
+resource "aws_cloudwatch_log_delivery_destination" "memory_traces" {
+  name                      = "${local.name}-memory-traces"
+  delivery_destination_type = "XRAY"
+}
+
+resource "aws_cloudwatch_log_delivery" "memory_traces" {
+  delivery_source_name     = aws_cloudwatch_log_delivery_source.memory_traces.name
+  delivery_destination_arn = aws_cloudwatch_log_delivery_destination.memory_traces.arn
+}

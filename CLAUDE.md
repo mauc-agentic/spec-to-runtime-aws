@@ -81,6 +81,8 @@ Web (`web/`, estática, sin compilar): `cd web && node --test` corre los tests d
 
 Corte automático de presupuesto (NFR-014): `uv run python scripts/test_budget_cutoff.py` lo prueba con una pregunta real (deja la demo cortada ~40 s: no lo ejecutes durante la charla); cómo levantarlo, en `docs/charla/presupuesto.md`.
 
+Observabilidad (`docs/charla/observabilidad.md`; el panel y las alarmas son opcionales y están fuera del alcance, su código está en `docs/charla/referencia/`): `uv run python scripts/show_trace.py` muestra la traza de la última pregunta (o `--request-id`) con el tiempo de cada tramo. La consola de AgentCore: CloudWatch → Observabilidad de GenAI → Bedrock AgentCore. Los spans y las preguntas quedan en `aws/spans` 30 días.
+
 Prueba de humo de punta a punta contra la API real (11 comprobaciones; se limpia sola y sirve de calentamiento): `uv run python scripts/smoke_test.py`. Tras `scripts/deploy_agent.sh`, haz commit de `infra/agent_image.auto.tfvars`: versiona la imagen desplegada.
 
 Sincronizar el repositorio con la Knowledge Base: `aws lambda invoke --function-name spec-to-runtime-sync --payload '{}' --cli-binary-format raw-in-base64-out out.json`. Scripts sueltos: `PYTHONPATH=src uv run python ...` (el `.pth` oculto de macOS impide importar el paquete).
