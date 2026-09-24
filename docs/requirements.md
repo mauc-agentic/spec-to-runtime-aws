@@ -42,7 +42,9 @@ Derivado de [`vision.md`](vision.md). Las filas con estado `Needs review` depend
 | NFR-009 | Aislamiento por rol           | En la suite de pruebas, 0 respuestas o citas del agente provienen de documentos con nivel de acceso superior al rol del token.  | Security        | High     | Open   |
 | NFR-010 | Efectividad de guardrails     | En un conjunto de pruebas de al menos 10 casos (ataque de prompt, tema prohibido, dato personal), el 100 % es bloqueado o anonimizado por Bedrock Guardrails. | Security        | High     | Open   |
 | NFR-011 | Latencia de consulta          | El percentil 95 de una consulta síncrona con RAG debe ser de 10 segundos o menos **(umbral por confirmar tras medir)**. | Performance     | Medium   | Needs review |
-| NFR-012 | Costo de la demo              | El costo de AWS de una jornada de demo (levantar, ensayar, presentar y destruir) debe ser de 5 USD o menos **(umbral por confirmar)**; el almacén de vectores debe ser S3 Vectors. | Cost            | Medium   | Needs review |
+| NFR-012 | Presupuesto del proyecto       | El gasto total de AWS del proyecto (desarrollo, pruebas, ensayos y la charla) no debe superar 50 USD. Meta de planificación: 30 USD como máximo (3.000 consultas a 0,010 USD), dejando 20 USD de reserva. Sin recursos de costo fijo (NAT Gateway, OpenSearch Serverless, throughput aprovisionado, claves KMS propias); el almacén de vectores debe ser S3 Vectors. | Cost            | High     | Open   |
+| NFR-013 | Límites de uso                | En runtime, no solo con alertas: cada usuario puede hacer como máximo 25 consultas por día y el proyecto acumula como máximo 3.000 consultas; la respuesta del modelo se limita a 800 tokens de salida y el agente a 3 llamadas a herramientas por consulta. Superado un límite, la API responde con error controlado sin invocar al modelo. | Cost            | High     | Open   |
+| NFR-014 | Alertas y cierre por gasto    | AWS Budgets de 50 USD con alertas al 50 %, 80 % y 100 % por correo; al 90 % (45 USD) una acción de presupuesto deniega la invocación de modelos al rol del agente. Al terminar cada sesión, el entorno se destruye con `terraform destroy` (0 recursos de la demo activos fuera de la sesión). | Cost            | High     | Open   |
 
 ## Constraints
 
@@ -55,3 +57,4 @@ Derivado de [`vision.md`](vision.md). Las filas con estado `Needs review` depend
 | C-005 | Fecha de la charla      | Las demos y la documentación deben estar listas antes del 2026-09-26.                                         | Schedule    | High     | Open         |
 | C-006 | Infraestructura como código | Toda la infraestructura se define con Terraform (decisión en `docs/charla/iac-terraform.md`), con el state en S3. | Technical   | High     | Open         |
 | C-007 | Modelo de lenguaje      | El agente usa Amazon Nova 2 Lite (`us.amazon.nova-2-lite-v1:0`).                                             | Technical   | High     | Open         |
+| C-008 | Presupuesto y aforo     | Presupuesto total de 50 USD en AWS para un aforo esperado de 50 participantes; ver `docs/charla/presupuesto.md` para el modelo de costos. | Financial   | High     | Open         |
