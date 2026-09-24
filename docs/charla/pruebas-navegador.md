@@ -27,11 +27,12 @@ Un bloque de código entre pasos (o una línea en blanco) cerraba la lista y el 
   - Para «¿Qué es AIUP?», de los 6 fragmentos que recibe el agente, 3 son de `scripts/` y solo entra `docs/vision.md` (en el puesto 6, con 0,717).
   - Para la pregunta de instalación, `CLAUDE.md` queda en el puesto 11 y solo se recuperan 6; con palabras clave sueltas sale primero.
   - Indexar el código (`scripts/`, `tests/`, `src/`) mete fragmentos que mencionan los mismos términos. Ya estaba anotado como «El código añade ruido a las preguntas de negocio» en `uc-003-sincronizacion.md`; ahora afecta a la primera pregunta de ejemplo.
-- **Opciones** (decisión pendiente; cambiar qué se indexa modifica UC-003 BR-001):
-  1. **No indexar `scripts/` ni `tests/`** (`EXCLUDED_DIRS` en `sync/rules.py`), sincronizar y repetir los 4 botones. Es la más simple y encaja con FR-014, que enumera documentos y no código.
-  2. **Reordenar por ruta** en `retrieval.retrieve`: pedir más fragmentos (por ejemplo 20) y priorizar `docs/`, `README.md` y `CLAUDE.md` sobre el código. Conserva el código para preguntas técnicas.
-  3. Ambas.
-- Cualquiera de las tres exige volver a probar los 4 botones y la prueba de humo antes de la charla.
+- **Decisión tomada (opción 1):** no indexar `scripts/` ni `tests/`. Aplicado y desplegado el 2026-09-24; la sincronización quitó 16 archivos.
+- **Resultado medido** (`retrieve` y 5 preguntas en el navegador, con la sesión abierta):
+  - «¿Qué es AIUP?»: ahora responde «AIUP (AI Unified Process) es un proceso que muestra cómo llevar una especificación hasta un sistema en ejecución en AWS», con fuentes `docs/vision.md` y `CLAUDE.md`.
+  - «¿Cuánto cuesta la demo?»: ahora abre con «El presupuesto total para la demo es de 50 USD» desde `presupuesto.md` (antes hablaba de un script).
+  - «¿Cómo protege el agente sus respuestas?» y «¿Qué diferencia hay entre los perfiles?»: siguen bien.
+  - «¿Cómo instalo las dependencias?»: **ya no inventa «Python 3.8»**, pero sigue sin encontrar los comandos y dice que no hay instrucciones. La causa es de contenido: el README tenía 7 líneas y los comandos solo estaban en `CLAUDE.md`, dirigido a Claude Code. Se añadió una sección al README (commit `dffdd3a`). **Falta verificarlo:** la KB se sincroniza desde `main`, así que hay que mergear, sincronizar y repetir la pregunta.
 
 ## Límites de esta verificación
 

@@ -12,6 +12,11 @@ INCLUDED_EXTENSIONS = {
 
 EXCLUDED_DIRS = {".git", ".venv", "node_modules", ".terraform", "__pycache__", ".build"}
 
+# Pruebas y scripts: repiten el vocabulario de los documentos (nombres de UC, "AIUP", comandos) y
+# desplazaban a `docs/vision.md` y `CLAUDE.md` de los pocos fragmentos que recibe el agente. Con ellos
+# indexados, "¿Qué es AIUP?" respondía que era una aplicación (pruebas de navegador, 2026-09-24).
+NOISE_DIRS = {"tests", "scripts"}
+
 # Archivos de dependencias: son texto, pero no aportan nada a las respuestas.
 LOCK_PATTERNS = ["*.lock", "*lock.json", "*.lock.hcl"]
 
@@ -37,6 +42,8 @@ def decide(path: str, size: int) -> Decision:
     name = posixpath.basename(path)
     if any(part in EXCLUDED_DIRS for part in parts[:-1]):
         return Decision(False, "directory excluded")
+    if any(part in NOISE_DIRS for part in parts[:-1]):
+        return Decision(False, "tests and scripts are not indexed")
     if _matches(name, SENSITIVE_PATTERNS):
         return Decision(False, "sensitive file")
     if _matches(name, LOCK_PATTERNS):
