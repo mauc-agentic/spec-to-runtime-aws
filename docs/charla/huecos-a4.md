@@ -25,4 +25,11 @@ Estado: **desplegado y verificado con la prueba de humo (13/13) el 2026-09-24**.
 
 - **Los avisos son un solo mecanismo.** Los tres casos (dato enmascarado, memoria caída y, a futuro, otros) usan la lista `notices` de la solicitud y un diccionario de textos en la web (`web/errors.js`), sin un campo por aviso.
 - **Cada cambio de comportamiento del agente exige imagen nueva:** commit, `scripts/deploy_agent.sh` y `terraform apply` (que también sube la web y actualiza las Lambdas).
-- **Lo que no se verificó:** la web solo se comprobó que se sirve con el JS nuevo. Los avisos y «Mostrar más» no se han visto en un navegador.
+- **Verificado en un navegador real el 2026-09-24** (cuenta de prueba con 22 conversaciones sembradas): el aviso «Oculté datos personales…» aparece sobre la respuesta y la burbuja muestra `{EMAIL}`; el historial pasa de 20 a 23 conversaciones con «Mostrar más», que desaparece al final. Sigue sin probarse el aviso de memoria caída.
+
+## Derivas cerradas después (2026-09-24)
+
+- **UC-004 A1 (sesión vencida):** la web guarda la pregunta con la cuenta a la que pertenece (`state.pending`) y la devuelve al cuadro al volver a entrar con esa misma cuenta; con otra cuenta no se restaura, y salir a propósito la descarta. Probado con un 401 simulado en la página: la sesión vencida real no se probó.
+- **Cinco derivas resueltas en la spec** (UC-001 A3/BR-005 y A7/BR-004, UC-002 A1, UC-007 BR-002 y BR-008), más el paso 7 de UC-001 y una precondición de UC-004 que suponían lo contrario. El detalle está en `cobertura-ucs.md`.
+- **Aprendizaje:** una afirmación de la auditoría ("el informe ya lo dice") resultó falsa al revisar el código. Antes de ajustar una spec al comportamiento actual, hay que comprobar que ese comportamiento existe.
+- **Aprendizaje sobre las pruebas en navegador:** el asistente no puede escribir contraseñas, así que el login lo hace la persona en la pestaña que controla Claude (la sesión es por pestaña). Se sembraron datos directamente en DynamoDB para no gastar modelo y se borraron al terminar.

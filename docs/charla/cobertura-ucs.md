@@ -8,25 +8,25 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 
 | UC | Estado | Resumen |
 |---|---|---|
-| UC-001 Autenticarse | Implemented | Cubierto; derivas por comportamiento propio de Cognito |
-| UC-002 Elegir perfil | Implemented | Cubierto; deriva en A1 y sin tests de la web |
+| UC-001 Autenticarse | Implemented | Cubierto; spec ajustada a Cognito el 2026-09-24 (bloqueo y contraseña) |
+| UC-002 Elegir perfil | Implemented | Cubierto; spec ajustada (General por defecto) y sin tests de la web |
 | UC-003 Sincronizar documentos | Implemented | El mejor cubierto; falta probar el `POST` con cambios desde la web |
-| UC-004 Consultar al agente | Implemented | Muy cubierto; A4 cerrado el 2026-09-24; queda la deriva en A1 |
+| UC-004 Consultar al agente | Implemented | Muy cubierto; A4 y la deriva de A1 cerradas el 2026-09-24 |
 | UC-005 Continuar conversación | Implemented | Cubierto; A4 cerrado el 2026-09-24 (con un límite: ver abajo) |
 | UC-006 Consultar historial | Implemented | Cubierto; A4 cerrado el 2026-09-24 |
-| UC-007 Top 10 de preguntas | Implemented | Muy cubierto; dos derivas documentadas |
+| UC-007 Top 10 de preguntas | Implemented | Muy cubierto; derivas cerradas el 2026-09-24 |
 
 ## Detalle: qué falta en cada UC
 
 ### UC-001 Autenticarse
 - **Cubierto:** flujo principal, A1, A4, A5, A8, BR-001, BR-002, BR-003, BR-007 (5 tests de la Lambda y la prueba en el navegador con registro real y sesión de Ponente); BR-006 y BR-008 por configuración de Cognito.
-- **Deriva, A3 y BR-005:** la spec dice "5 intentos fallidos = bloqueo de 15 minutos"; Cognito aplica su propio bloqueo progresivo. Decidir: aceptarlo y ajustar la spec, o dejarlo.
-- **Deriva menor, A7 y BR-004:** la spec pide "letras y números"; la política de Cognito exige al menos una minúscula y un número.
+- **Deriva resuelta, A3 y BR-005:** la spec pasa a "bloqueo temporal decidido por Cognito, sin cifras". No se ha comprobado aquí cuántos intentos ni cuánto dura el bloqueo real; la spec no promete ninguna cifra.
+- **Deriva resuelta, A7 y BR-004:** la spec pide ahora 8 caracteres, una minúscula y un número, que es la política real de Cognito.
 - **Sin test:** A2 y A6 (los mensajes de error de `web/cognito.js`); se comprobaron a mano.
 
 ### UC-002 Elegir perfil de respuesta
 - **Cubierto:** flujo principal, A2, A3, A4, BR-001, BR-002, BR-003, BR-004, BR-005 (2 tests del agente y de la API, y la prueba en el navegador).
-- **Deriva, A1:** la spec dice que el sistema pide elegir perfil antes de la primera pregunta; la web arranca con **General** ya marcado y no pregunta.
+- **Deriva resuelta, A1:** la spec pasa a "General preseleccionado y cambiable en cualquier momento" (también el paso 7 de UC-001 y la precondición de UC-004).
 - **Sin test:** que "las conversaciones nuevas arrancan con el último perfil" (usa `localStorage`); no hay tests de la interfaz.
 
 ### UC-003 Sincronizar documentos del repositorio
@@ -37,7 +37,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 ### UC-004 Consultar al agente sobre el repositorio
 - **Cubierto:** flujo principal, A2, A3, A5, A6, A7, A8, BR-001, BR-002, BR-003, BR-004, BR-005, BR-006, BR-007, BR-008 y BR-010 (33 tests, verificación con Nova 2 Lite y la Knowledge Base reales, trazas y cuotas).
 - **Cubierto, A4 (datos personales en la pregunta):** la API enmascara correos y teléfonos (`{EMAIL}`, `{PHONE}`) antes de guardar y de encolar, cuenta la consulta y avisa en la web, que además muestra la pregunta ya enmascarada (tests de `common/privacy.py` y de la API, y la prueba de humo). Alcance: solo correos y teléfonos, los tipos que el guardrail ya anonimiza; otros datos personales (nombres, direcciones) no se detectan. Ver `docs/charla/huecos-a4.md`.
-- **Deriva, A1 (sesión vencida):** la spec dice que se conserva la pregunta escrita; la web cierra la sesión y la pregunta se pierde.
+- **Deriva resuelta, A1 (sesión vencida):** al vencer la sesión al enviar, la pregunta escrita vuelve al cuadro cuando se entra con la misma cuenta (nunca con otra). Comprobado en un navegador real con un 401 simulado; el vencimiento real del token no se ha probado.
 - **Sin test:** BR-009 (formato legible en celular): se comprobó a mano, no hay test de la interfaz.
 
 ### UC-005 Continuar una conversación
@@ -52,8 +52,8 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 
 ### UC-007 Consultar top 10 de preguntas
 - **Cubierto:** flujo principal, A1 a A8, BR-001, BR-003 a BR-007, BR-009, BR-010 y BR-011 (20 tests, verificación con 30 preguntas de 7 temas: 7, 5, 5, 4, 4, 3, 2 exactos).
-- **Deriva, BR-002:** la spec dice "todas las preguntas almacenadas"; el análisis cubre las **1.000 más recientes** y lo informa. Alcanza para el aforo (unas 750).
-- **Deriva, BR-008:** la spec dice 20 s para el informe y 90 s como fallo; el sistema aplica el tiempo límite general de **60 s**. En la práctica tarda 4 a 7 s.
+- **Deriva resuelta, BR-002:** la spec pasa a "como máximo las 1.000 preguntas más recientes" y el informe lo dice explícitamente cuando se llega al tope (test). Antes solo mostraba el total analizado, sin decir que había recorte.
+- **Deriva resuelta, BR-008:** la spec pasa a 20 s típico y 60 s como límite general. En la práctica tarda 4 a 7 s con todo caliente.
 
 ## Requisitos: estado real
 
@@ -75,7 +75,7 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 1. **AgentCore Gateway (FR-012):** el target Lambda está hecho; decidir si se añade un target de servidor MCP de AWS o se enmienda el requisito para dejar solo Lambda.
 2. ~~**TC-001**~~ Escrito en `docs/test_cases/TC-001-conversacion-y-analisis-del-ponente.md` (`Draft`, falta la revisión del autor). Sigue sin automatizarse: la web no tiene pruebas de navegador.
 3. ~~Cerrar los huecos de UC-004 A4, UC-005 A4 y UC-006 A4~~ Cerrados el 2026-09-24 (`docs/charla/huecos-a4.md`); faltan la prueba en navegador de los avisos y de "Mostrar más", y la de memoria caída de verdad.
-4. Decidir las **derivas** (UC-001 A3/BR-005, UC-002 A1, UC-004 A1, UC-007 BR-002/BR-008): cambiar el código o ajustar la spec.
+4. ~~Decidir las derivas~~ Resueltas el 2026-09-24: UC-004 A1 en código; UC-001, UC-002, UC-004 y UC-007 en la spec (UC-007 BR-002 en ambos).
 5. Probar el **`POST /admin/sync` con cambios** desde la web.
 6. Probar la web en un **celular físico** y con lector de pantalla.
 7. Ensayo con `scripts/smoke_test.py` unos minutos antes, y vaciar datos con `scripts/reset_event_data.py --yes`.
