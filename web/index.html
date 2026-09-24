@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Pregúntale al repo</title>
+  <meta name="description" content="Un agente que responde con lo que está escrito en el repositorio de la charla: visión, requisitos, especificaciones y aprendizajes.">
+  <meta name="theme-color" content="#090a2c">
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip" href="#main">Ir al contenido</a>
+
+  <!-- Dibujos reutilizables: hexágono, caña de azúcar, nube y signo más. -->
+  <svg class="sprite" width="0" height="0" focusable="false" aria-hidden="true">
+    <defs>
+      <linearGradient id="blade" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="#f6f4ff"/>
+        <stop offset="1" stop-color="#a9a2cf"/>
+      </linearGradient>
+    </defs>
+    <symbol id="mark" viewBox="0 0 40 46">
+      <path d="M20 2 37 12v22L20 44 3 34V12Z" fill="none" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M20 31c0-9 0-13-3-19M20 31c1-8 3-12 7-16M20 31c-3-5-7-8-11-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+    </symbol>
+  </svg>
+
+  <main id="main">
+    <!-- Acceso -->
+    <section id="view-auth" class="auth" aria-labelledby="auth-title">
+      <div class="auth-copy">
+        <h1 id="auth-title">Pregúntale al repo</h1>
+        <p class="lead">Un agente que responde con lo que está escrito en este repositorio: la visión, los requisitos, las especificaciones y lo que aprendimos construyéndolo.</p>
+
+        <h2 class="lilac">Entra y pregunta</h2>
+        <div class="tabs" role="tablist" aria-label="Acceso">
+          <button type="button" role="tab" id="tab-login" aria-selected="true" aria-controls="auth-form">Entrar</button>
+          <button type="button" role="tab" id="tab-signup" aria-selected="false" aria-controls="auth-form">Crear cuenta</button>
+        </div>
+
+        <form id="auth-form" novalidate>
+          <label for="email">Correo</label>
+          <input id="email" name="email" type="email" inputmode="email" autocomplete="email" required>
+
+          <label for="password">Contraseña</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" minlength="8" required>
+          <p class="hint" id="password-hint" hidden>Mínimo 8 caracteres, con letras y números.</p>
+
+          <div id="code-field" hidden>
+            <label for="event-code">Código del evento</label>
+            <input id="event-code" name="eventCode" type="text" autocomplete="off" autocapitalize="none" spellcheck="false">
+            <p class="hint">Lo comparte el ponente durante la charla.</p>
+          </div>
+
+          <p id="auth-error" class="error" role="alert" hidden></p>
+          <button id="auth-submit" class="primary" type="submit">Entrar</button>
+        </form>
+      </div>
+
+      <div class="badge">
+        <img class="badge-img" src="aws-ug-valle-del-cauca.png" width="560" height="640" alt="Logo de AWS User Group Valle del Cauca: un hexágono con caña de azúcar y notas musicales">
+        <p class="credit">Charla para AWS User Group Valle del Cauca</p>
+      </div>
+    </section>
+
+    <!-- Chat -->
+    <section id="view-chat" class="chat" hidden aria-label="Chat con el agente">
+      <header class="bar">
+        <div class="brand">
+          <svg class="mark" aria-hidden="true"><use href="#mark"/></svg>
+          <span>Pregúntale al repo</span>
+        </div>
+        <nav class="bar-actions" aria-label="Acciones">
+          <button type="button" id="btn-history" class="ghost">Historial</button>
+          <button type="button" id="btn-new" class="ghost" aria-label="Nueva conversación">Nueva</button>
+          <button type="button" id="btn-logout" class="ghost">Salir</button>
+        </nav>
+      </header>
+
+      <fieldset class="profile">
+        <legend>Cómo quieres la respuesta</legend>
+        <div class="seg-row">
+        <label class="seg"><input type="radio" name="profile" value="Basic"><span><strong>Básico</strong><small>paso a paso</small></span></label>
+        <label class="seg"><input type="radio" name="profile" value="Technical"><span><strong>Técnico</strong><small>con detalle</small></span></label>
+        <label class="seg"><input type="radio" name="profile" value="General" checked><span><strong>General</strong><small>corto y claro</small></span></label>
+        </div>
+      </fieldset>
+
+      <div id="speaker" class="speaker" hidden>
+        <p class="lilac">Herramientas del ponente</p>
+        <div class="chips">
+          <button type="button" class="chip" id="btn-top">Top 10 de preguntas</button>
+          <button type="button" class="chip" id="btn-sync">Sincronizar documentos</button>
+          <button type="button" class="chip" id="btn-sync-status">Estado de la sincronización</button>
+        </div>
+      </div>
+
+      <div id="scroller" class="scroller">
+        <div id="empty" class="empty">
+          <h2 class="lilac">Pregunta lo que quieras saber del proyecto</h2>
+          <p>Respondo con lo que está escrito en el repositorio y te muestro de dónde sale cada cosa. Prueba con una de estas:</p>
+          <div class="chips" id="suggestions"></div>
+        </div>
+        <ol id="log" class="log" aria-live="polite" aria-label="Conversación"></ol>
+      </div>
+
+      <form id="composer" class="composer">
+        <label for="prompt" class="sr">Tu pregunta</label>
+        <textarea id="prompt" rows="1" maxlength="500" placeholder="Escribe tu pregunta" enterkeyhint="send"></textarea>
+        <div class="composer-foot">
+          <span id="count" class="count" aria-live="off">0 de 500</span>
+          <button id="send" class="primary" type="submit">Enviar</button>
+        </div>
+      </form>
+
+      <aside id="history" class="drawer" hidden aria-labelledby="history-title">
+        <div class="drawer-head">
+          <h2 id="history-title" class="lilac">Tus conversaciones</h2>
+          <button type="button" id="history-close" class="ghost">Cerrar</button>
+        </div>
+        <div id="history-list" class="history-list"></div>
+      </aside>
+    </section>
+  </main>
+
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+
+  <script src="config.js"></script>
+  <script type="module" src="app.js"></script>
+</body>
+</html>
