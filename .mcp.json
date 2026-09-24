@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "strands-agents": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "strands-agents-mcp-server"
+      ],
+      "env": {}
+    },
+    "terraform": {
+      "type": "stdio",
+      "command": "docker",
+      "args": [
+        "run",
+        "-i",
+        "--rm",
+        "hashicorp/terraform-mcp-server",
+        "--toolsets=registry"
+      ],
+      "env": {}
+    }
+  }
+}
