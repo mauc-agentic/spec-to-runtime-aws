@@ -63,3 +63,14 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 - **Presupuesto:** AWS Budgets marca 0,00 USD gastados y una previsión de 0,02 USD, pero Billing tarda de 8 a 24 horas en reflejar el gasto, así que no es una lectura fiable de lo gastado hoy. La protección real son las cuotas de la API y el corte automático al 90 %.
 - **Estado:** `terraform plan` sobre `main`: «No changes». CI de `main` en curso cuando se miró.
 - **Entorno:** sigue desplegado y gastando (NFR-014 pide destruirlo al terminar). Reconstruirlo antes de la charla lleva unos minutos, con el orden documentado en `agentcore-gateway.md`.
+
+## Plan de cierre tras la charla (acordado el 2026-09-24)
+
+Orden acordado: primero la prueba de reconstrucción desde cero, después destruir.
+
+1. **Capturar datos reales antes de destruir (yo, en modo lectura):** el top de preguntas y la actividad (anónimos), la latencia real (p50 y p95, para confirmar NFR-011), tokens y estimación de costo. La tabla de preguntas, los logs y las trazas se pierden al destruir.
+2. **Prueba de reconstrucción (NFR-004, FR-004):** con `docs/charla/reconstruccion.md` en la mano, destruir, crear todo desde un clon limpio siguiendo solo ese documento, medir el tiempo total y por fase contra los 30 minutos, y volver a destruir. Anotar todo paso manual que el documento no recoja.
+3. **Mejoras que la prueba debe decidir** (se aplican durante la reconstrucción, no antes, para no dejar el entorno de la charla con cambios pendientes): quitar la fase 1 con `-target` haciendo que la política del orquestador no dependa del ARN del Runtime, y declarar en Terraform el grupo de logs del Runtime, que hoy `destroy` deja atrás (ya hay uno huérfano del entorno anterior).
+4. **Comprobar que no queda nada (NFR-014):** el barrido por etiqueta debe dar 0 y no debe quedar ningún grupo de logs `/aws/bedrock-agentcore/runtimes/...`. Decidir si se conserva el bucket del estado (`prevent_destroy`; guarda el estado, con valores sensibles).
+5. **Gasto real:** Billing tarda de 8 a 24 horas en reflejarlo; mirar 1 o 2 días después y comparar el costo por consulta con los 0,010 USD estimados (NFR-012). El historial de costos sobrevive al `destroy`.
+6. **Cierre en AIUP y en el repositorio:** estados de los UC y TC-001, requisitos `Parcial` y `Needs review`, pendientes sin hacer convertidos en issues, retrospectiva en `docs/charla/`, ramas mergeadas, archivos temporales y un tag del estado de la charla.
