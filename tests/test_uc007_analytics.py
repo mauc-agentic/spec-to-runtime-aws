@@ -93,6 +93,22 @@ def test_uc007_br005_report_never_reveals_who_asked():
 
 def test_uc007_fetch_follows_pagination_and_caps_the_analysis():
     rows = [_row(i, minute=i % 60) for i in range(1, 6)]
-    questions = analytics.fetch_questions(FakeTable(rows), NOW.replace(hour=0), NOW)
+    questions = analytics.fetch_questions(FakeTable(rows), NOW.replace(hour=6), NOW)
     assert len(questions) == 5
     assert [q.id for q in questions] == [1, 2, 3, 4, 5]
+
+
+def test_uc007_the_search_uses_the_local_day_not_the_utc_day():
+    # Sábado 8:00 p. m. en Colombia = domingo 01:00 UTC: las preguntas están guardadas como "26".
+    start = datetime(2026, 9, 27, 1, 0, tzinfo=UTC)
+    end = datetime(2026, 9, 27, 3, 0, tzinfo=UTC)  # 10:00 p. m. del 26 en Colombia
+    assert analytics.local_days(start, end) == ["2026-09-26"]
+    assert analytics.local_days(datetime(2026, 9, 25, 12, 0, tzinfo=UTC), end) == [
+        "2026-09-25",
+        "2026-09-26",
+    ]
+
+
+def test_uc007_a5_the_empty_notice_explains_that_the_speakers_own_questions_do_not_count():
+    report = analytics.top_questions_report(table=FakeTable([]), classify=lambda _p: "{}", now=NOW)
+    assert "preguntas del ponente no cuentan" in report

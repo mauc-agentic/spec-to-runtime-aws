@@ -35,7 +35,6 @@ body::before {
 }
 
 :focus-visible { outline: 3px solid var(--lilac); outline-offset: 2px; }
-.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
 .skip { position: absolute; left: -999px; top: 0; background: #fff; color: var(--ink); padding: .5rem 1rem; z-index: 50; }
 .skip:focus { left: 0; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
@@ -148,7 +147,7 @@ button { font: inherit; cursor: pointer; }
 
 .bar { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .75rem 1rem; }
 .brand { display: flex; align-items: center; gap: .55rem; font-weight: 700; white-space: nowrap; }
-.mark { width: 26px; height: 30px; color: var(--lilac); flex: none; }
+.mark { width: 35px; height: 40px; flex: none; }
 .bar-actions { display: flex; gap: .35rem; }
 
 .profile { margin: 0; padding: 0 1rem; border: 0; }
@@ -181,7 +180,7 @@ button { font: inherit; cursor: pointer; }
 .log { display: flex; flex-direction: column; gap: 1rem; margin: 0; padding: .5rem 1rem 1.25rem; list-style: none; }
 .msg { display: flex; gap: .6rem; }
 .msg.user { justify-content: flex-end; }
-.avatar { width: 24px; height: 28px; margin-top: .35rem; color: var(--lilac); flex: none; }
+.avatar { width: 26px; height: 30px; margin-top: .25rem; flex: none; }
 .bubble { max-width: 92%; overflow-wrap: anywhere; }
 .msg.user .bubble {
   padding: .7rem 1rem;

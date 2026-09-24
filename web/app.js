@@ -148,7 +148,13 @@ function addAgent() {
   $("#empty").hidden = true;
   const item = document.createElement("li");
   item.className = "msg agent";
-  item.innerHTML = '<svg class="avatar" aria-hidden="true"><use href="#mark"/></svg>';
+  const avatar = document.createElement("img");
+  avatar.className = "avatar";
+  avatar.src = "aws-ug-valle-del-cauca.png";
+  avatar.alt = "";
+  avatar.width = 26;
+  avatar.height = 30;
+  item.append(avatar);
   const bubble = document.createElement("div");
   bubble.className = "bubble";
   const status = document.createElement("div");

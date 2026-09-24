@@ -12,6 +12,8 @@ from datetime import UTC, datetime, timedelta
 
 from boto3.dynamodb.conditions import Attr, Key
 
+from spec_to_runtime.common.quota import LOCAL_TZ
+
 MAX_QUESTIONS = 1000
 QUESTION_LIMIT = 200
 TOP = 10
@@ -44,14 +46,21 @@ class Topic:
     latest: str
 
 
+def local_days(start: datetime, end: datetime) -> list[str]:
+    """Días (hora de Colombia) entre dos instantes.
+
+    Las preguntas se guardan con el día local (índice by_day); buscar por fecha UTC no encuentra
+    nada por la tarde-noche colombiana, cuando en UTC ya es el día siguiente.
+    """
+    first, last = start.astimezone(LOCAL_TZ).date(), end.astimezone(LOCAL_TZ).date()
+    return [(first + timedelta(days=i)).isoformat() for i in range((last - first).days + 1)]
+
+
 def fetch_questions(table, since: datetime | None, now: datetime | None = None) -> list[Question]:
     """Preguntas de participantes ya respondidas, en orden cronológico (índice by_day)."""
     now = now or datetime.now(UTC)
     start = since or now - timedelta(days=30)
-    days = [
-        (start.date() + timedelta(days=i)).isoformat()
-        for i in range((now.date() - start.date()).days + 1)
-    ]
+    days = local_days(start, now)
     rows = []
     for day in days:
         kwargs = {
@@ -140,7 +149,10 @@ def top_questions_report(
     period = f"últimas {period_hours} horas" if since else "todo el evento hasta ahora"
     questions = fetch_questions(table, since, now)
     if not questions:
-        return "No encontré preguntas de participantes en ese periodo. Prueba con un periodo más amplio."
+        return (
+            "No encontré preguntas de participantes en ese periodo. "
+            "Las preguntas del ponente no cuentan. Prueba con un periodo más amplio."
+        )
     listing = "\n".join(f"{q.id}. {q.text}" for q in questions)
     grouped = parse_topics(classify(_CLASSIFY_PROMPT.format(questions=listing)), questions)
     return format_report(rank_topics(grouped, len(questions)), len(questions), period)
