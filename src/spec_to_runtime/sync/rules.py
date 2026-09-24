@@ -14,7 +14,7 @@ EXCLUDED_DIRS = {".git", ".venv", "node_modules", ".terraform", "__pycache__", "
 
 # Pruebas y scripts: repiten el vocabulario de los documentos (nombres de UC, "AIUP", comandos) y
 # desplazaban a `docs/vision.md` y `CLAUDE.md` de los pocos fragmentos que recibe el agente. Con ellos
-# indexados, "¿Qué es AIUP?" respondía que era una aplicación (pruebas de navegador, 2026-09-24).
+# indexados, la primera pregunta de ejemplo respondía que la metodología era una aplicación.
 NOISE_DIRS = {"tests", "scripts"}
 
 # Bitácoras de trabajo: citan literalmente las preguntas de ejemplo y sus respuestas, así que la
