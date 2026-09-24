@@ -116,6 +116,22 @@ def ask(token: str, prompt: str, profile: str = "General", session_id: str | Non
     return {"http": 202, "session_id": body["session_id"], **result}
 
 
+def ask_until(token: str, prompt: str, accept, profile: str = "General") -> dict:
+    """Pregunta y, si la respuesta no cumple `accept`, repite UNA vez.
+
+    Solo para comprobaciones que dependen de que el modelo decida usar una herramienta: no es
+    determinista y una sola negativa no prueba que la integración esté rota. Si la segunda
+    respuesta tampoco cumple, la comprobación falla.
+    """
+    result = ask(token, prompt, profile)
+    if accept(result):
+        return result
+    print(
+        "     la respuesta no cumplió; se repite una vez (el modelo decide si usa la herramienta)"
+    )
+    return ask(token, prompt, profile)
+
+
 def cleanup(emails: list[str]) -> None:
     """Borra usuarios, preguntas y contadores de la prueba (y devuelve la cuota global)."""
     used = 0
@@ -235,14 +251,15 @@ def main() -> int:
             top["status"] == "Completed" and "pregunta" in top["text"].lower(),
             "el Ponente obtiene el top de preguntas",
         )
-        aws_docs = ask(
+        aws_docs = ask_until(
             speaker_token,
             "Busca en la documentación oficial de AWS cómo se añade un target Lambda a un "
             "AgentCore Gateway",
+            lambda r: r["status"] == "Completed" and "docs.aws.amazon.com" in r.get("text", ""),
             "Technical",
         )
         check(
-            aws_docs["status"] == "Completed" and "docs.aws.amazon.com" in aws_docs["text"],
+            aws_docs["status"] == "Completed" and "docs.aws.amazon.com" in aws_docs.get("text", ""),
             "el Ponente busca en la documentación de AWS por el servidor MCP (FR-012)",
         )
         participant_docs = ask(
