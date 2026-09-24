@@ -72,6 +72,15 @@ export function groupsOf(token) {
   }
 }
 
+// Identifica a la persona para no devolver la pregunta escrita a otra cuenta (UC-004 A1).
+export function subOf(token) {
+  try {
+    return JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))).sub ?? null;
+  } catch {
+    return null;
+  }
+}
+
 export function isExpired(token) {
   try {
     const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));

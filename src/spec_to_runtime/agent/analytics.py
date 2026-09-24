@@ -163,7 +163,12 @@ def top_questions_report(
         )
     listing = "\n".join(f"{q.id}. {q.text}" for q in questions)
     grouped = parse_topics(classify(_CLASSIFY_PROMPT.format(questions=listing)), questions)
-    return format_report(rank_topics(grouped, len(questions)), len(questions), period)
+    report = format_report(rank_topics(grouped, len(questions)), len(questions), period)
+    if len(questions) >= MAX_QUESTIONS:  # UC-007 BR-002: el tope se dice, no se aplica en silencio
+        report += f"\n\nSolo se analizaron las {MAX_QUESTIONS:,} preguntas más recientes del periodo.".replace(
+            ",", "."
+        )
+    return report
 
 
 PROFILE_NAMES = {"Basic": "Básico", "Technical": "Técnico", "General": "General"}

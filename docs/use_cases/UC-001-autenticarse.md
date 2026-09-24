@@ -24,7 +24,7 @@
 4. System validates the email address, the password and the event code.
 5. System creates the account with the Participante role and confirms it without further steps.
 6. System signs the participant in.
-7. System shows the chat and asks the participant to choose an answer profile (see UC-002).
+7. System shows the chat with the General answer profile selected, which the participant can change at any time (see UC-002).
 
 ## Alternative Flows
 
@@ -47,10 +47,10 @@
 
 ### A3: Too Many Failed Attempts
 
-**Trigger:** Participant fails to sign in five times in a row (step 6)  
+**Trigger:** Participant fails to sign in several times in a row (step 6)  
 **Flow:**
 
-1. System blocks sign-in for that account for 15 minutes and tells the participant when to try again.
+1. System temporarily blocks sign-in for that account and tells the participant to wait a few minutes before trying again.
 2. Use case ends.
 
 ### A4: Invalid Event Code
@@ -123,11 +123,11 @@ Ponente accounts are created only by the organizer. Nobody can obtain the Ponent
 
 ### BR-004: Password Rules
 
-A password has at least 8 characters and contains letters and numbers.
+A password has at least 8 characters and contains at least one lowercase letter and one number.
 
 ### BR-005: Failed Attempts
 
-After five failed sign-in attempts in a row the account is blocked for 15 minutes.
+After several failed sign-in attempts in a row the account is blocked temporarily. The identity service (Amazon Cognito) decides how many attempts trigger the block and how long it lasts, and the waiting time grows with each further failure; the demo does not configure it. The participant is always told to wait a few minutes.
 
 ### BR-006: No Password Recovery
 

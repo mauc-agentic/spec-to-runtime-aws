@@ -98,6 +98,22 @@ def test_uc007_fetch_follows_pagination_and_caps_the_analysis():
     assert [q.id for q in questions] == [1, 2, 3, 4, 5]
 
 
+def test_uc007_br002_the_report_says_when_only_the_most_recent_questions_were_analyzed(monkeypatch):
+    monkeypatch.setattr(analytics, "MAX_QUESTIONS", 3)
+    classify = lambda _p: json.dumps({"topics": [{"name": "X", "ids": [1, 2, 3]}]})
+    capped = analytics.top_questions_report(
+        table=FakeTable([_row(i, minute=i) for i in range(1, 6)]), classify=classify, now=NOW
+    )
+    assert "3 preguntas analizadas" in capped
+    assert "Solo se analizaron las 3 preguntas más recientes del periodo" in capped
+    within = analytics.top_questions_report(
+        table=FakeTable([_row(i, minute=i) for i in range(1, 3)]),
+        classify=lambda _p: json.dumps({"topics": [{"name": "X", "ids": [1, 2]}]}),
+        now=NOW,
+    )
+    assert "Solo se analizaron" not in within
+
+
 def test_uc007_the_search_uses_the_local_day_not_the_utc_day():
     # Sábado 8:00 p. m. en Colombia = domingo 01:00 UTC: las preguntas están guardadas como "26".
     start = datetime(2026, 9, 27, 1, 0, tzinfo=UTC)

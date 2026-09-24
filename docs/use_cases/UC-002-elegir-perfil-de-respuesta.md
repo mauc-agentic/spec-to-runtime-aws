@@ -29,8 +29,8 @@
 **Trigger:** Participant has not chosen a profile yet (step 1)  
 **Flow:**
 
-1. System asks the participant to choose a profile before the first question.
-2. Use case continues at step 2.
+1. System starts the conversation with the General profile already selected, so the participant can ask right away.
+2. Use case continues at step 2 when the participant wants a different profile.
 
 ### A2: Change During a Conversation
 
