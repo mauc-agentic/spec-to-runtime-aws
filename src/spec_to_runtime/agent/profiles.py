@@ -50,8 +50,8 @@ _STYLE = {
 
 _SPEAKER = (
     "Eres el asistente del PONENTE. Además de responder sobre el repositorio, puedes usar la "
-    "herramienta top_preguntas cuando pida las preguntas más frecuentes. Presenta el informe "
-    "tal como lo devuelve la herramienta, sin recalcular cifras."
+    "herramienta top_preguntas cuando pida las preguntas más frecuentes; llámala directamente, "
+    "sin escribir nada antes ni después: el informe se muestra tal cual."
 )
 
 

@@ -18,6 +18,13 @@ aws ecr get-login-password --region "$REGION" |
 docker buildx build --platform linux/arm64 --load -t "${REPO_URL}:${TAG}" .
 docker push "${REPO_URL}:${TAG}"
 
+# La etiqueta queda versionada: un `terraform apply` sin argumentos nunca cambia de imagen.
+cat > infra/agent_image.auto.tfvars <<TFVARS
+# Imagen del agente desplegada en el Runtime. La actualiza scripts/deploy_agent.sh; se versiona
+# para que un \`terraform apply\` sin argumentos nunca cambie de imagen por descuido.
+agent_image_tag = "${TAG}"
+TFVARS
+
 echo
 echo "Imagen subida: ${REPO_URL}:${TAG}"
-echo "Actualiza el Runtime con: terraform -chdir=infra apply -var agent_image_tag=${TAG}"
+echo "Actualiza el Runtime con: terraform -chdir=infra apply   (y haz commit de infra/agent_image.auto.tfvars)"

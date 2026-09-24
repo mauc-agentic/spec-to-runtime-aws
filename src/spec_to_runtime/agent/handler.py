@@ -13,6 +13,7 @@ from strands.types.exceptions import MaxTokensReachedException
 
 from spec_to_runtime.agent import retrieval
 from spec_to_runtime.agent.config import Settings
+from spec_to_runtime.agent.factory import REPORT_KEY
 from spec_to_runtime.agent.profiles import NO_SOURCE_MESSAGE, Profile, Role
 
 logger = logging.getLogger(__name__)
@@ -109,6 +110,12 @@ async def run(
         logger.exception("agent_failed session_id=%s", request["session_id"])
         yield {"type": "error", "code": "agent_failed", "message": type(error).__name__}
         return
+
+    # El informe del top de preguntas se muestra tal cual, sin que el modelo lo reescriba.
+    state = getattr(agent, "state", None)
+    report = state.get(REPORT_KEY) if state is not None else None
+    if report:
+        yield {"type": "text", "text": report}
 
     if result is not None and result.stop_reason == "guardrail_intervened":
         yield {"type": "blocked"}

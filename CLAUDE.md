@@ -77,6 +77,8 @@ scripts/deploy_agent.sh                                   # construye y sube la 
 terraform -chdir=infra apply -var agent_image_tag=<hash>  # crea o actualiza el Runtime
 ```
 
+Prueba de humo de punta a punta contra la API real (11 comprobaciones; se limpia sola y sirve de calentamiento): `uv run python scripts/smoke_test.py`. Tras `scripts/deploy_agent.sh`, haz commit de `infra/agent_image.auto.tfvars`: versiona la imagen desplegada.
+
 Sincronizar el repositorio con la Knowledge Base: `aws lambda invoke --function-name spec-to-runtime-sync --payload '{}' --cli-binary-format raw-in-base64-out out.json`. Scripts sueltos: `PYTHONPATH=src uv run python ...` (el `.pth` oculto de macOS impide importar el paquete).
 
 Aún no hay comando de arranque local del agente; agrégalos aquí en el mismo cambio que los introduce. Detalle del ambiente en `docs/charla/preparacion-ambiente.md`.

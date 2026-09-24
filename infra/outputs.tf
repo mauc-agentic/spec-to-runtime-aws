@@ -56,3 +56,12 @@ output "agent_runtime_arn" {
   description = "Vacío hasta que se despliegue la imagen (agent_image_tag)"
   value       = one(aws_bedrockagentcore_agent_runtime.agent[*].agent_runtime_arn)
 }
+
+output "api_url" {
+  description = "URL base de la API; todas las rutas exigen el token de Cognito"
+  value       = aws_apigatewayv2_api.main.api_endpoint
+}
+
+output "requests_queue_url" {
+  value = aws_sqs_queue.requests.url
+}

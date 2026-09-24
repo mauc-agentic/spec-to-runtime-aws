@@ -1,23 +1,6 @@
 # UC-003 Sincronizar documentos del repositorio: Lambda que copia la rama main de GitHub al
 # bucket de documentos y lanza la ingesta de la Knowledge Base. El rol Ponente se comprueba
-# antes, en la API (UC-003 A1); hasta que exista la API se invoca con `aws lambda invoke`.
-
-data "archive_file" "sync" {
-  type        = "zip"
-  source_dir  = "${path.module}/../src"
-  output_path = "${path.module}/.build/sync.zip"
-  excludes = [
-    "spec_to_runtime/agent",
-    "spec_to_runtime/agent/*",
-    "spec_to_runtime/auth",
-    "spec_to_runtime/auth/*",
-    # Los .pyc dependen de la máquina y cambiarían el hash del paquete entre equipos.
-    "spec_to_runtime/__pycache__",
-    "spec_to_runtime/__pycache__/*",
-    "spec_to_runtime/sync/__pycache__",
-    "spec_to_runtime/sync/__pycache__/*",
-  ]
-}
+# antes, en la API (UC-003 A1), que la invoca; también se puede invocar con `aws lambda invoke`.
 
 resource "aws_cloudwatch_log_group" "sync" {
   # checkov:skip=CKV_AWS_158:Logs con cifrado por defecto; una CMK añade costo fijo (NFR-012)
@@ -85,8 +68,8 @@ resource "aws_lambda_function" "sync" {
   role             = aws_iam_role.sync.arn
   runtime          = "python3.14"
   handler          = "spec_to_runtime.sync.handler.handler"
-  filename         = data.archive_file.sync.output_path
-  source_code_hash = data.archive_file.sync.output_base64sha256
+  filename         = data.archive_file.app.output_path
+  source_code_hash = data.archive_file.app.output_base64sha256
   timeout          = 300
   memory_size      = 256
 

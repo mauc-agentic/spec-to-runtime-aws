@@ -2,6 +2,7 @@
 
 import asyncio
 from types import SimpleNamespace
+from unittest.mock import MagicMock
 
 import pytest
 
@@ -21,9 +22,14 @@ PAYLOAD = {
 }
 
 
+class FakeState(dict):
+    """Imita `agent.state` de Strands (donde `top_preguntas` deja el informe)."""
+
+
 class FakeAgent:
-    def __init__(self, events):
+    def __init__(self, events, state=None):
         self._events = events
+        self.state = state
 
     async def stream_async(self, _prompt):
         for event in self._events:
@@ -179,3 +185,40 @@ def test_uc004_br005_hitting_the_length_limit_truncates_instead_of_failing():
     )
     assert events[-1]["type"] == "done" and events[-1]["truncated"] is True
     assert [e["type"] for e in events].count("error") == 0
+
+
+def test_uc007_the_report_is_shown_verbatim_and_not_rewritten_by_the_model():
+    result = SimpleNamespace(stop_reason="end_turn", metrics=None)
+    report = "**Top 2 de preguntas** · 3 preguntas analizadas\n1. **Costos** — 2 preguntas (67 %)"
+
+    def factory(*_a, **_k):
+        return FakeAgent([{"result": result}], FakeState(report=report))
+
+    payload = {**PAYLOAD, "role": "Speaker", "prompt": "top de preguntas"}
+
+    async def go():
+        return [
+            e
+            async for e in handler.run(
+                payload, SETTINGS, retrieve_fn=lambda _q: [], agent_factory=factory
+            )
+        ]
+
+    events = asyncio.run(go())
+    assert {"type": "text", "text": report} in events
+    assert events[-1]["type"] == "done"
+
+
+def test_uc007_br005_the_report_goes_through_the_guardrail_before_being_shown():
+    from spec_to_runtime.agent.factory import mask_with_guardrail
+
+    client = MagicMock()
+    client.apply_guardrail.return_value = {
+        "action": "GUARDRAIL_INTERVENED",
+        "outputs": [{"text": "Ejemplo: {EMAIL}"}],
+    }
+    assert mask_with_guardrail(client, SETTINGS, "Ejemplo: juan@example.com") == "Ejemplo: {EMAIL}"
+    call = client.apply_guardrail.call_args.kwargs
+    assert call["source"] == "OUTPUT" and call["guardrailIdentifier"] == "g"
+    client.apply_guardrail.return_value = {"action": "NONE"}
+    assert mask_with_guardrail(client, SETTINGS, "sin datos personales") == "sin datos personales"
