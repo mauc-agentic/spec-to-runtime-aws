@@ -56,3 +56,46 @@ NAT Gateway, OpenSearch Serverless (costo mínimo mensual alto), throughput apro
 
 - Los precios de Bedrock en la API de precios aparecen por modalidad (`priority`, `batch`, `flex`); el precio estándar hay que derivarlo. Guardrails, Titan y S3 Vectors no salieron: hay que confirmarlos en la consola de precios antes de la charla.
 - El costo dominante por consulta es el modelo y no la infraestructura; por eso la cuota por usuario y el tope de tokens pesan más que optimizar el runtime.
+
+## Corte automático al 90 % (NFR-014)
+
+`infra/budget_action.tf`. Al llegar al 90 % del presupuesto (45 USD), AWS Budgets adjunta a los roles del agente y del orquestador la política `spec-to-runtime-budget-cutoff`, que **niega** invocar modelos, guardrails, la Knowledge Base y el Runtime. El resto de permisos (DynamoDB, logs) se mantiene: así el sistema puede registrar el fallo y devolver la cuota. La acción es automática y avisa por correo.
+
+**Es la red de seguridad de último recurso, no una protección en tiempo real.** Facturación tiene un retraso de 8 a 24 horas: el gasto de una mala tarde puede tardar en verse. La protección en tiempo real son las cuotas de la API (25 preguntas por participante y día, 3.000 en total, 10 consultas simultáneas).
+
+### Cómo se comprobó
+
+- **Simulador de IAM con los recursos reales:** modelo, guardrail, Knowledge Base e invocar el Runtime pasan de `allowed` a `explicitDeny`; DynamoDB sigue `allowed`. El rol que asume Budgets solo puede adjuntar **esa** política a **esos dos** roles (no a otros, ni `AdministratorAccess`, ni crear usuarios).
+- **Corte simulado de verdad** (`scripts/test_budget_cutoff.py`, con una pregunta real por la API):
+
+| Paso | Resultado |
+|---|---|
+| Antes del corte | `Completed` en 9,6 s, cuota usada 1 |
+| Con el corte activo | `Failed` en **0,8 s**, `AccessDeniedException`, la cuota se devuelve (sigue en 1) |
+| Segundo intento | igual: falla rápido y sin gastar |
+| Tras retirar el corte | `Completed` en 5,8 s, cuota 2 |
+
+La web ya no dice "inténtalo de nuevo" cuando el fallo es el corte: dice que **la demo está en pausa por el límite de gasto** y avisa al ponente (`web/errors.js`, con tests).
+
+### Operación
+
+```bash
+# ¿Está armada o disparada la acción? (STANDBY = armada; EXECUTION_SUCCESS = ya cortó)
+aws budgets describe-budget-actions-for-budget --account-id <cuenta> --budget-name spec-to-runtime-50usd \
+  --query 'Actions[].[Status,ActionThreshold.ActionThresholdValue]'
+
+# Levantar el corte tras revisar el gasto (una vez por rol)
+for rol in spec-to-runtime-agent-runtime spec-to-runtime-orchestrator; do
+  aws iam detach-role-policy --role-name $rol --policy-arn $(terraform -chdir=infra output -raw budget_cutoff_policy_arn)
+done
+```
+
+Si la acción disparó, además de quitar la política hay que reiniciar la acción en la consola de Budgets (o `terraform apply -replace=aws_budgets_budget_action.cutoff`) para que vuelva a `STANDBY`.
+
+### Aprendizajes / dolores
+
+- **El presupuesto estaba ciego:** filtraba por la etiqueta de costo `project`, que aún no existe en Facturación (la lista de etiquetas seguía vacía), así que marcaba 0 USD y la acción **nunca se habría disparado**. Ahora el presupuesto cubre toda la cuenta (`budget_filter_by_tag = false`), lo que hoy es seguro porque la cuenta no tiene otros proyectos gastando (~0 USD este mes). Cuando la etiqueta exista se puede acotar.
+- **Quitar el bloque `cost_filter` del código no lo quita en AWS:** el proveedor lo trata como opcional y calculado, y `terraform plan` no detectó ningún cambio. Hubo que reemplazar el presupuesto (`-replace`). Regla: tras editar un recurso hay que comprobar el resultado **en AWS**, no solo que el plan salga limpio.
+- **`main` estaba por detrás de lo desplegado** cuando fui a construir esto: el #18 se mergeó antes de que subiera mis últimos commits y el plan de Terraform proponía revertir el Runtime y la web. Por eso salió el PR #19 aparte. Antes de aplicar hay que leer el plan.
+- **La primera simulación de IAM engañaba:** con recurso `*` el "antes" salía `implicitDeny` porque los permisos del rol están limitados a recursos concretos. Hay que simular con los recursos reales.
+- **En zsh `$ACC:role` interpreta `:r` como modificador** y rompe el ARN: escribir `${ACC}:role`, o usar Python.

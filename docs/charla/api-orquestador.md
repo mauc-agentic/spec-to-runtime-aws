@@ -79,6 +79,5 @@ El registro no pasa por la API: la web llama a Cognito con el código del evento
 
 - La web (S3 y CloudFront) y acotar CORS.
 - Exponer las herramientas del Ponente por AgentCore Gateway (FR-012).
-- Acción de presupuesto que quita al agente el permiso de invocar modelos al 90 % (NFR-014).
 - Solicitudes atascadas: si la orquestadora muriera a mitad, la solicitud quedaría en `Processing`; falta un barrido que la marque como fallida.
 - Activar la etiqueta de costo del presupuesto (`activate_cost_allocation_tag`).

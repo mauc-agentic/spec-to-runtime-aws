@@ -70,3 +70,8 @@ output "web_url" {
   description = "Dirección pública de la web"
   value       = "https://${aws_cloudfront_distribution.web.domain_name}"
 }
+
+output "budget_cutoff_policy_arn" {
+  description = "Política que AWS Budgets adjunta a los roles al llegar al umbral; quitarla levanta el corte"
+  value       = aws_iam_policy.budget_cutoff.arn
+}

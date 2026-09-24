@@ -33,3 +33,15 @@ variable "github_repo" {
   type        = string
   default     = "mauc-agentic/spec-to-runtime-aws"
 }
+
+variable "budget_filter_by_tag" {
+  description = "Acotar el presupuesto a la etiqueta `project`; solo funciona cuando la etiqueta de costo ya está activa"
+  type        = bool
+  default     = false
+}
+
+variable "budget_cutoff_percent" {
+  description = "Porcentaje del presupuesto al que se corta la invocación de modelos (NFR-014)"
+  type        = number
+  default     = 90
+}
