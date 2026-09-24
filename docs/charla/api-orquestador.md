@@ -47,7 +47,7 @@ El registro no pasa por la API: la web llama a Cognito con el código del evento
 | Primera petición a la API (arranque en frío de la Lambda) | 2,8 s hasta el `202`; las siguientes, 0,4 s |
 | Primera pregunta tras un despliegue | 11,5 s (arranque del contenedor y de la Lambda) |
 
-`scripts/smoke_test.py` repite estas 11 comprobaciones y **se limpia solo**: cierra el registro, borra usuarios, preguntas y contadores de la prueba. Sirve de ensayo y de calentamiento unos minutos antes de la charla.
+`scripts/smoke_test.py` repite estas 13 comprobaciones y **se limpia solo**: cierra el registro, borra usuarios, preguntas y contadores de la prueba. Sirve de ensayo y de calentamiento unos minutos antes de la charla.
 
 ### Top 10 del Ponente con volumen
 

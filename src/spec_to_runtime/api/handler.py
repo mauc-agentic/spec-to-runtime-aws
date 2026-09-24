@@ -15,7 +15,7 @@ from datetime import datetime, timedelta
 import boto3
 from botocore.config import Config
 
-from spec_to_runtime.common import metrics, quota, requests_store, tracing
+from spec_to_runtime.common import metrics, privacy, quota, requests_store, tracing
 
 logger = logging.getLogger(__name__)
 
@@ -83,6 +83,12 @@ def _body(event: dict) -> dict:
     return body if isinstance(body, dict) else {}
 
 
+def _offset(event: dict) -> int:
+    """`?offset=` de la lista de conversaciones (UC-006 A4); un valor no válido cuenta como 0."""
+    raw = (event.get("queryStringParameters") or {}).get("offset", "0")
+    return int(raw) if str(raw).isdigit() else 0
+
+
 def submit_question(event: dict, now: datetime | None = None) -> dict:
     """UC-004 pasos 2 a 5: valida, cuenta la consulta, la guarda y la encola."""
     deps, now = _deps(), now or requests_store.now_utc()
@@ -92,6 +98,8 @@ def submit_question(event: dict, now: datetime | None = None) -> dict:
     prompt = str(body.get("prompt", "")).strip()
     if not 1 <= len(prompt) <= MAX_PROMPT_CHARS:
         return _error(400, "invalid_prompt", "La pregunta debe tener entre 1 y 500 caracteres.")
+    # UC-004 A4: los datos personales se enmascaran antes de guardar y encolar, y se avisa.
+    prompt, masked = privacy.mask_personal_data(prompt)
     profile = body.get("profile", "General")
     if profile not in PROFILES:
         return _error(400, "invalid_profile", "El perfil debe ser Basic, Technical o General.")
@@ -110,6 +118,9 @@ def submit_question(event: dict, now: datetime | None = None) -> dict:
         user_id=user_id, request_id=request_id, session_id=session_id, prompt=prompt,
         profile=profile, role=role, now=now,
     )  # fmt: skip
+    notices = [privacy.NOTICE_MASKED] if masked else []
+    if notices:
+        item["notices"] = notices
 
     trace_header = tracing.xray_header()
     trace_id = tracing.root_trace_id(trace_header)
@@ -152,6 +163,7 @@ def submit_question(event: dict, now: datetime | None = None) -> dict:
         "prompt": prompt,
         "profile": profile,
         "role": role,
+        "notices": notices,
         "day": item["day"],
         "created_at": item["created_at"],  # el orquestador mide con esto la espera en la cola
     }
@@ -182,6 +194,9 @@ def submit_question(event: dict, now: datetime | None = None) -> dict:
             "session_id": session_id,
             "status": "Queued",
             "context_expired": context_expired,
+            # UC-004 A4: la pregunta se guardó enmascarada; la web muestra esa versión y el aviso.
+            "prompt": prompt,
+            "masked": masked,
         },
     )
 
@@ -195,8 +210,9 @@ def get_request(event: dict) -> dict:
 
 
 def list_sessions(event: dict) -> dict:
-    """UC-006 pasos 3 y A4: conversaciones del usuario, la más reciente primero."""
+    """UC-006 pasos 3 y A4: conversaciones del usuario, la más reciente primero, de 20 en 20."""
     user_id, _ = _identity(event)
+    offset = _offset(event)
     sessions: dict[str, dict] = {}
     for item in requests_store.user_requests(_deps().table, user_id):  # de más nueva a más vieja
         entry = sessions.setdefault(
@@ -211,8 +227,9 @@ def list_sessions(event: dict) -> dict:
         entry["first_question"] = item["prompt"]  # queda la más antigua
         entry["started_at"] = item["created_at"]
     ordered = sorted(sessions.values(), key=lambda s: s["last_activity_at"], reverse=True)
+    page = ordered[offset : offset + SESSIONS_PAGE]
     return _response(
-        200, {"sessions": ordered[:SESSIONS_PAGE], "has_more": len(ordered) > SESSIONS_PAGE}
+        200, {"sessions": page, "has_more": len(ordered) > offset + SESSIONS_PAGE, "offset": offset}
     )
 
 

@@ -141,6 +141,19 @@ def test_uc004_a2_no_source_completes_with_the_notice_and_no_sources_section(set
     )
 
 
+def test_uc005_a4_a_memory_notice_from_the_agent_is_stored_next_to_earlier_notices(setup):
+    events = [
+        {"type": "notice", "code": "memory_unavailable"},
+        {"type": "notice", "code": "memory_unavailable"},  # repetido: se guarda una sola vez
+        {"type": "text", "text": "Respuesta"},
+        {"type": "done", "citations": [], "usage": {}},
+    ]
+    deps, message, aws = setup(events)
+    message["notices"] = ["personal_data_masked"]  # el aviso que puso la API (UC-004 A4)
+    assert orch.process(message, deps, now=lambda: NOW) == "Completed"
+    assert stored(aws)["notices"] == ["personal_data_masked", "memory_unavailable"]
+
+
 def test_uc004_a6_blocked_answers_keep_the_notice_and_still_count(setup):
     deps, message, aws = setup(
         [

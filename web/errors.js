@@ -18,3 +18,14 @@ export function describeFailure(data) {
       return { text: GENERIC_MESSAGE, retry: true };
   }
 }
+
+// Avisos que el servidor adjunta a una consulta que sí se respondió (UC-004 A4 y UC-005 A4).
+export const NOTICES = {
+  personal_data_masked: "Oculté datos personales de tu pregunta antes de enviarla.",
+  memory_unavailable: "No pude recordar lo anterior: respondo solo con tu pregunta actual.",
+};
+
+/** @returns {string[]} los textos de los avisos conocidos, sin repetir; ignora los que no conoce. */
+export function noticeTexts(codes) {
+  return [...new Set(codes ?? [])].map((code) => NOTICES[code]).filter(Boolean);
+}

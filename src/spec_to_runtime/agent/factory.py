@@ -1,5 +1,7 @@
 """Construcción del agente Strands: modelo Nova 2 Lite, guardrails, memoria y herramientas."""
 
+import logging
+
 from bedrock_agentcore.memory.integrations.strands.config import AgentCoreMemoryConfig
 from bedrock_agentcore.memory.integrations.strands.session_manager import (
     AgentCoreMemorySessionManager,
@@ -13,6 +15,10 @@ from spec_to_runtime.agent.config import Settings
 from spec_to_runtime.agent.gateway import GatewayClient
 from spec_to_runtime.agent.profiles import Profile, Role, system_prompt
 
+logger = logging.getLogger(__name__)
+
+MEMORY_DEGRADED_ATTR = "memory_degraded"  # el agente se creó sin memoria (UC-005 A4)
+NOTICE_MEMORY_UNAVAILABLE = "memory_unavailable"
 REPORT_KEY = "report"  # estado del agente donde `top_preguntas` deja el informe final
 
 
@@ -86,23 +92,35 @@ def build_agent(
     actor_id: str,
     context: str = "",
 ) -> Agent:
-    session_manager = None
-    if settings.memory_id:
-        session_manager = AgentCoreMemorySessionManager(
-            AgentCoreMemoryConfig(
-                memory_id=settings.memory_id, session_id=session_id, actor_id=actor_id
+    def make(session_manager=None) -> Agent:
+        return Agent(
+            model=make_model(settings),
+            # El contexto va en el prompt del sistema y no en el mensaje: así no se guarda en la
+            # memoria de la conversación ni infla las siguientes consultas (NFR-012).
+            system_prompt=system_prompt(profile, role, context),
+            tools=speaker_tools(settings) if role is Role.SPEAKER else [],
+            session_manager=session_manager,
+            conversation_manager=SlidingWindowConversationManager(
+                window_size=settings.context_messages
             ),
-            region_name=settings.region,
+            callback_handler=None,
         )
-    return Agent(
-        model=make_model(settings),
-        # El contexto va en el prompt del sistema y no en el mensaje: así no se guarda en la
-        # memoria de la conversación ni infla las siguientes consultas (NFR-012).
-        system_prompt=system_prompt(profile, role, context),
-        tools=speaker_tools(settings) if role is Role.SPEAKER else [],
-        session_manager=session_manager,
-        conversation_manager=SlidingWindowConversationManager(
-            window_size=settings.context_messages
-        ),
-        callback_handler=None,
-    )
+
+    if not settings.memory_id:
+        return make()
+    try:
+        # Strands lee la memoria al crear el agente: si falla, falla aquí.
+        return make(
+            AgentCoreMemorySessionManager(
+                AgentCoreMemoryConfig(
+                    memory_id=settings.memory_id, session_id=session_id, actor_id=actor_id
+                ),
+                region_name=settings.region,
+            )
+        )
+    except Exception:
+        # UC-005 A4: la memoria no responde; se contesta solo con la pregunta actual y se avisa.
+        logger.exception("memory_unavailable session_id=%s", session_id)
+        agent = make()
+        setattr(agent, MEMORY_DEGRADED_ATTR, True)
+        return agent

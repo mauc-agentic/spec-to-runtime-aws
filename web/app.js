@@ -1,6 +1,6 @@
 import { ApiError, createApi } from "./api.js";
 import * as cognito from "./cognito.js";
-import { describeFailure } from "./errors.js";
+import { describeFailure, noticeTexts } from "./errors.js";
 import { sessionUrl } from "./links.js";
 import { renderMarkdown } from "./markdown.js";
 
@@ -147,6 +147,11 @@ function addUser(text) {
   scrollToEnd(true);
 }
 
+function lastUserBubble() {
+  const bubbles = document.querySelectorAll("#log .msg.user .bubble");
+  return bubbles[bubbles.length - 1];
+}
+
 function addAgent() {
   $("#empty").hidden = true;
   const item = document.createElement("li");
@@ -169,7 +174,7 @@ function addAgent() {
   item.append(bubble);
   $("#log").append(item);
   scrollToEnd(true);
-  return { bubble, status, label: $(".label", status), body, text: "" };
+  return { bubble, status, label: $(".label", status), body, text: "", notes: new Set() };
 }
 
 function setPhase(message, phase) {
@@ -198,7 +203,20 @@ function addSessionLink(message, sessionId) {
   message.sessionLink = link;
 }
 
+function addNotices(message, codes) {
+  // Los avisos se muestran encima de la respuesta y una sola vez, aunque el sondeo los repita.
+  for (const text of noticeTexts(codes)) {
+    if (message.notes.has(text)) continue;
+    message.notes.add(text);
+    const note = document.createElement("p");
+    note.className = "note";
+    note.textContent = text;
+    message.bubble.insertBefore(note, message.status);
+  }
+}
+
 function paint(message, data) {
+  addNotices(message, data.notices);
   if (data.text) setText(message, data.text);
   if (FINAL.has(data.status)) {
     addSessionLink(message, data.session_id);
@@ -282,6 +300,8 @@ async function ask(prompt, existing) {
   try {
     const sent = await api.ask(prompt, currentProfile(), state.sessionId);
     state.sessionId = sent.session_id;
+    if (sent.masked && !existing) lastUserBubble().textContent = sent.prompt; // UC-004 A4: se guardó enmascarada
+    addNotices(message, sent.masked ? ["personal_data_masked"] : []);
     if (sent.context_expired) toast("Pasaron más de 24 horas desde tu última pregunta: empecé una conversación nueva.");
     const data = await follow(message, sent.request_id);
     if (data?.status === "Failed") {
@@ -301,6 +321,52 @@ async function ask(prompt, existing) {
 
 let historyOpener = null;
 
+const HISTORY_DAY = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: TIMEZONE });
+
+function sessionButton(item) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "session";
+  const title = document.createElement("span");
+  title.className = "s-title";
+  title.textContent = item.first_question;
+  const meta = document.createElement("span");
+  meta.className = "s-meta";
+  meta.textContent = `${item.questions} ${item.questions === 1 ? "pregunta" : "preguntas"}, ${HISTORY_DAY.format(new Date(item.last_activity_at))}`;
+  button.append(title, meta);
+  button.addEventListener("click", () => loadSession(item.session_id));
+  return button;
+}
+
+// UC-006 A4: la API entrega 20 conversaciones por página; "Mostrar más" pide la siguiente.
+async function loadHistoryPage(list, offset) {
+  const { sessions, has_more: hasMore } = await api.sessions(offset);
+  list.querySelector(".history-more")?.remove();
+  if (!offset && !sessions.length) {
+    const empty = document.createElement("p");
+    empty.className = "history-empty";
+    empty.textContent = "Todavía no tienes conversaciones. Haz tu primera pregunta.";
+    list.append(empty);
+    return;
+  }
+  for (const item of sessions) list.append(sessionButton(item));
+  if (!hasMore) return;
+  const more = document.createElement("button");
+  more.type = "button";
+  more.className = "ghost history-more";
+  more.textContent = "Mostrar más";
+  more.addEventListener("click", async () => {
+    more.disabled = true;
+    try {
+      await loadHistoryPage(list, offset + sessions.length);
+    } catch {
+      more.disabled = false;
+      toast("No se pudieron cargar más conversaciones. Inténtalo de nuevo.");
+    }
+  });
+  list.append(more);
+}
+
 async function openHistory() {
   historyOpener = document.activeElement;
   $("#history").hidden = false;
@@ -308,30 +374,8 @@ async function openHistory() {
   const list = $("#history-list");
   list.textContent = "Cargando…";
   try {
-    const { sessions } = await api.sessions();
     list.replaceChildren();
-    if (!sessions.length) {
-      const empty = document.createElement("p");
-      empty.className = "history-empty";
-      empty.textContent = "Todavía no tienes conversaciones. Haz tu primera pregunta.";
-      list.append(empty);
-      return;
-    }
-    const day = new Intl.DateTimeFormat("es-CO", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit", timeZone: TIMEZONE });
-    for (const item of sessions) {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "session";
-      const title = document.createElement("span");
-      title.className = "s-title";
-      title.textContent = item.first_question;
-      const meta = document.createElement("span");
-      meta.className = "s-meta";
-      meta.textContent = `${item.questions} ${item.questions === 1 ? "pregunta" : "preguntas"}, ${day.format(new Date(item.last_activity_at))}`;
-      button.append(title, meta);
-      button.addEventListener("click", () => loadSession(item.session_id));
-      list.append(button);
-    }
+    await loadHistoryPage(list, 0);
   } catch {
     list.textContent = "No se pudo cargar el historial. Inténtalo de nuevo.";
   }

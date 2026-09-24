@@ -23,3 +23,12 @@ test("cualquier otro fallo se puede reintentar y aclara que no descontó cuota",
     assert.match(failure.text, /no se descontó/);
   }
 });
+
+test("los avisos conocidos se traducen, sin repetir, y los desconocidos se ignoran", async () => {
+  const { noticeTexts, NOTICES } = await import("../errors.js");
+  assert.deepEqual(noticeTexts(["personal_data_masked", "personal_data_masked", "otro"]), [
+    NOTICES.personal_data_masked,
+  ]);
+  assert.match(NOTICES.memory_unavailable, /solo con tu pregunta actual/);
+  assert.deepEqual(noticeTexts(undefined), []);
+});

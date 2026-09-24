@@ -13,7 +13,11 @@ from strands.types.exceptions import MaxTokensReachedException
 
 from spec_to_runtime.agent import retrieval, telemetry
 from spec_to_runtime.agent.config import Settings
-from spec_to_runtime.agent.factory import REPORT_KEY
+from spec_to_runtime.agent.factory import (
+    MEMORY_DEGRADED_ATTR,
+    NOTICE_MEMORY_UNAVAILABLE,
+    REPORT_KEY,
+)
 from spec_to_runtime.agent.profiles import NO_SOURCE_MESSAGE, Profile, Role
 
 logger = logging.getLogger(__name__)
@@ -116,6 +120,10 @@ async def _answer(
             actor_id=request["user_id"],
             context=context,
         )
+        if getattr(agent, MEMORY_DEGRADED_ATTR, False):
+            # UC-005 A4: sin la memoria se responde solo con la pregunta actual, y se avisa.
+            telemetry.annotate(memory="unavailable")
+            yield {"type": "notice", "code": NOTICE_MEMORY_UNAVAILABLE}
         result = None
         async for event in agent.stream_async(request["prompt"]):
             if "data" in event:
