@@ -3,3 +3,21 @@ variable "region" {
   type        = string
   default     = "us-east-1"
 }
+
+variable "alert_email" {
+  description = "Correo que recibe las alertas de presupuesto"
+  type        = string
+  default     = "migueluribe.ing@gmail.com"
+}
+
+variable "budget_usd" {
+  description = "Presupuesto duro del proyecto en USD (NFR-012)"
+  type        = number
+  default     = 50
+}
+
+variable "max_accounts" {
+  description = "Máximo de cuentas de participantes (UC-001 BR-007)"
+  type        = number
+  default     = 100
+}

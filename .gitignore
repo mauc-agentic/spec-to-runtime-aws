@@ -25,3 +25,6 @@ crash.log
 
 # macOS
 .DS_Store
+
+# Artefactos de build de Terraform (zips de Lambda)
+.build/
