@@ -39,6 +39,17 @@ def make_plan(remote: list[RemoteFile], known: dict[str, str]) -> Plan:
     return plan
 
 
+def prepare_body(path: str, body: bytes) -> bytes:
+    """Ajusta lo que se sube a la base de conocimiento, sin tocar el original de GitHub.
+
+    Bedrock rechaza con "formato no soportado" los `.py` cuya primera línea es un shebang
+    (`#!/usr/bin/env python3`); sin esa línea se indexan con normalidad.
+    """
+    if path.endswith(".py") and body.startswith(b"#!"):
+        return body.split(b"\n", 1)[1] if b"\n" in body else b""
+    return body
+
+
 def known_documents(s3, bucket: str) -> dict[str, str]:
     """Rutas ya cargadas y su versión (sha de git) guardada como metadato del objeto."""
     known: dict[str, str] = {}
@@ -115,7 +126,7 @@ def synchronize(
             s3.put_object(
                 Bucket=bucket,
                 Key=file.path,
-                Body=download(file.path),
+                Body=prepare_body(file.path, download(file.path)),
                 Metadata={SHA_METADATA_KEY: file.sha},
             )
         except Exception as error:  # noqa: BLE001 - A6: se sigue con los demás documentos

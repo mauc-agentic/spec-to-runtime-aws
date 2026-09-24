@@ -33,6 +33,7 @@ class FakeS3:
         if kw["Key"].endswith("roto.md"):
             raise OSError("fallo")
         self.puts.append(kw["Key"])
+        self.bodies = {**getattr(self, "bodies", {}), kw["Key"]: kw["Body"]}
         self.objects[kw["Key"]] = kw["Metadata"][sync.SHA_METADATA_KEY]
 
     def delete_object(self, Bucket, Key):
@@ -186,3 +187,22 @@ def test_uc003_handler_dispatches_status_and_sync(monkeypatch):
     assert handler.handler({"action": "status"}, None) == {"status": "NeverRun"}
     assert handler.handler({}, None)["result"] == "Started"
     assert s3.puts == ["docs/a.md"]
+
+
+def test_uc003_a6_python_files_with_a_shebang_are_uploaded_without_it():
+    # Bedrock rechaza estos archivos con "formato no soportado"; sin la primera línea se indexan.
+    s3 = FakeS3()
+    scripts = {
+        "scripts/a.py": b'#!/usr/bin/env python3\n"""Doc."""\nprint(1)\n',
+        "src/b.py": b'"""Doc."""\nprint(2)\n',
+        "scripts/c.sh.md": b"#!/no-es-python\ntexto\n",
+    }
+    run([rf(path) for path in scripts], s3=s3, download=lambda p: scripts[p])
+    assert s3.bodies["scripts/a.py"] == b'"""Doc."""\nprint(1)\n'
+    assert s3.bodies["src/b.py"] == scripts["src/b.py"]  # sin shebang: intacto
+    assert s3.bodies["scripts/c.sh.md"] == scripts["scripts/c.sh.md"]  # solo se toca .py
+
+
+@pytest.mark.parametrize(("body", "expected"), [(b"#!/usr/bin/env python3", b""), (b"", b"")])
+def test_uc003_a6_a_python_file_that_is_only_a_shebang_becomes_empty(body, expected):
+    assert sync.prepare_body("x.py", body) == expected
