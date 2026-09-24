@@ -43,3 +43,16 @@ output "sync_function" {
   description = "Lambda de UC-003; invócala con `aws lambda invoke` hasta que exista la API"
   value       = aws_lambda_function.sync.function_name
 }
+
+output "agent_ecr_repository" {
+  value = aws_ecr_repository.agent.repository_url
+}
+
+output "memory_id" {
+  value = aws_bedrockagentcore_memory.agent.id
+}
+
+output "agent_runtime_arn" {
+  description = "Vacío hasta que se despliegue la imagen (agent_image_tag)"
+  value       = one(aws_bedrockagentcore_agent_runtime.agent[*].agent_runtime_arn)
+}
