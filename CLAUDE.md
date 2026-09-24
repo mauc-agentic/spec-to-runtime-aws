@@ -53,7 +53,7 @@ AIUP no tiene plugin de construcción para Python + Strands, así que la impleme
 
 ## Comandos
 
-Región única: `us-east-1`. Proyecto Python con `uv` (`src/spec_to_runtime`, tests en `tests/`).
+Región única: `us-east-1`. Proyecto Python con `uv`, **solo Python 3.14** (`.python-version` y `requires-python = ">=3.14,<3.15"`; no uses otra versión). Código en `src/spec_to_runtime`, tests en `tests/`.
 
 ```bash
 uv sync                         # instalar dependencias
