@@ -1,0 +1,32 @@
+[project]
+name = "spec-to-runtime"
+version = "0.1.0"
+description = "Agente Strands en Bedrock AgentCore derivado de specs AIUP"
+readme = "README.md"
+authors = [
+    { name = "mau-cloud", email = "migueluribe.ing@icloud.com" }
+]
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "bedrock-agentcore>=1.23.1",
+    "strands-agents>=1.57.0",
+]
+
+[project.scripts]
+spec-to-runtime = "spec_to_runtime:main"
+
+[build-system]
+requires = ["uv_build>=0.12.18,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.8",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100

@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Stack:** Python + Strands Agents (framework de agentes de AWS), ejecutado en Bedrock AgentCore, con API Gateway, Lambda, SQS, CloudWatch y Secrets Manager. Toda la infraestructura va como IaC con **Terraform** (decisión en `docs/charla/iac-terraform.md`). Fecha de la charla: **2026-09-26**.
 
-Plugins de Claude Code: `aiup-core` (documentación AIUP, independiente del stack) y `aws-agents` (skills `agents-get-started`, `agents-build`, `agents-deploy`, `agents-debug`, etc. para AgentCore). `aws-agents` **no está instalado ni habilitado** todavía en este entorno (`.claude/settings.json` solo habilita `aiup-core`); instálalo y habilítalo antes de la fase de construcción. `aiup-vaadin-jooq` **no aplica** a este stack y está deshabilitado en `.claude/settings.json`: no uses `/implement`, `/flyway-migration` ni los skills de tests Vaadin/Hilla. El código aún no existe; no asumas nada más allá de lo que esté en el repo o en las specs aprobadas.
+Plugins de Claude Code: `aiup-core` (documentación AIUP, independiente del stack) y `aws-agents` (skills `agents-get-started`, `agents-build`, `agents-deploy`, `agents-debug`, etc. para AgentCore). `aws-agents` (marketplace `aws/agent-toolkit-for-aws`) ya está instalado y habilitado en `.claude/settings.json`. `aiup-vaadin-jooq` **no aplica** a este stack y está deshabilitado en `.claude/settings.json`: no uses `/implement`, `/flyway-migration` ni los skills de tests Vaadin/Hilla. El código aún no existe; no asumas nada más allá de lo que esté en el repo o en las specs aprobadas.
 
 **Estado de los specs:** `docs/entity_model.md` es un borrador que solo cubre el ciclo de invocación del agente (`AGENT_REQUEST`, `AGENT_RESULT`, `TOOL_INVOCATION`). El dominio de negocio del agente aún está por confirmar; ampliar el modelo cuando se defina, y esa decisión condiciona los UCs siguientes.
 
@@ -53,4 +53,20 @@ AIUP no tiene plugin de construcción para Python + Strands, así que la impleme
 
 ## Comandos
 
-Aún no hay build, lint ni tests. Cuando exista el proyecto, agrega aquí los comandos reales (build, test completo, ejecutar un solo test, arrancar la app, deploy a AWS) en el mismo cambio que los introduce.
+Región única: `us-east-1`. Proyecto Python con `uv`, **solo Python 3.14** (`.python-version` y `requires-python = ">=3.14,<3.15"`; no uses otra versión). Código en `src/spec_to_runtime`, tests en `tests/`.
+
+```bash
+uv sync                         # instalar dependencias
+uv run pytest                   # todos los tests
+uv run pytest tests/test_x.py::test_y   # un solo test
+uv run ruff check . && uv run ruff format --check .   # lint / formato
+```
+
+Terraform (`infra/`, state remoto en S3; el bucket se crea una vez desde `infra/bootstrap/` con state local):
+
+```bash
+terraform -chdir=infra/bootstrap init && terraform -chdir=infra/bootstrap apply   # solo la primera vez
+terraform -chdir=infra init && terraform -chdir=infra validate && terraform -chdir=infra plan
+```
+
+Aún no hay comando de arranque local del agente ni de deploy a AgentCore; agrégalos aquí en el mismo cambio que los introduce. Detalle del ambiente en `docs/charla/preparacion-ambiente.md`.
