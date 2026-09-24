@@ -29,3 +29,7 @@ crash.log
 # Artefactos de build de Terraform (zips de Lambda)
 .build/
 !agent_image.auto.tfvars
+
+# Configuración generada por Terraform para la web (infra/web.tf)
+web/config.js
+web/node_modules/

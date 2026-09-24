@@ -65,3 +65,8 @@ output "api_url" {
 output "requests_queue_url" {
   value = aws_sqs_queue.requests.url
 }
+
+output "web_url" {
+  description = "Dirección pública de la web"
+  value       = "https://${aws_cloudfront_distribution.web.domain_name}"
+}

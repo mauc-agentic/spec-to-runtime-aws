@@ -15,10 +15,10 @@ data "archive_file" "app" {
   ]
 }
 
-variable "web_origins" {
-  description = "Orígenes web permitidos por CORS; se ajusta al dominio de CloudFront cuando exista"
+variable "web_origins_extra" {
+  description = "Orígenes adicionales permitidos por CORS (por ejemplo http://localhost:8080 para desarrollo)"
   type        = list(string)
-  default     = ["*"]
+  default     = []
 }
 
 variable "project_cap" {
@@ -254,7 +254,7 @@ resource "aws_apigatewayv2_api" "main" {
   protocol_type = "HTTP"
 
   cors_configuration {
-    allow_origins = var.web_origins
+    allow_origins = concat(["https://${aws_cloudfront_distribution.web.domain_name}"], var.web_origins_extra)
     allow_methods = ["GET", "POST", "OPTIONS"]
     allow_headers = ["authorization", "content-type"]
     max_age       = 3600
