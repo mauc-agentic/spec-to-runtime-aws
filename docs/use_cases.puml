@@ -1,0 +1,53 @@
+@startuml Use Cases Overview
+left to right direction
+
+actor "Participante" as participante
+actor "Ponente" as ponente
+actor "Repositorio GitHub" as github <<sistema>>
+
+ponente -|> participante
+
+rectangle "Pregúntale al repo" {
+    usecase "UC-001\nAutenticarse" as UC001
+    usecase "UC-002\nElegir perfil de respuesta" as UC002
+    usecase "UC-003\nSincronizar documentos del repositorio" as UC003
+    usecase "UC-004\nConsultar al agente sobre el repositorio" as UC004
+    usecase "UC-005\nContinuar una conversación" as UC005
+    usecase "UC-006\nConsultar historial de conversaciones" as UC006
+    usecase "UC-007\nConsultar top 10 de preguntas" as UC007
+}
+
+participante --> UC001
+participante --> UC002
+participante --> UC004
+participante --> UC005
+participante --> UC006
+
+ponente --> UC003
+ponente --> UC007
+
+UC003 <-- github
+
+UC004 ..> UC001 : <<include>>
+UC005 ..> UC004 : <<extend>>
+UC007 ..> UC001 : <<include>>
+
+note right of UC002
+  Perfiles: Básico (estudiante),
+  Técnico (profesional) y General.
+end note
+
+note right of UC007
+  Solo el rol Ponente.
+  Se resuelve con una herramienta
+  del agente vía AgentCore Gateway.
+end note
+
+@enduml
+
+' Trazabilidad (requisitos de docs/requirements.md):
+' UC-001: FR-013                      UC-005: FR-018
+' UC-002: FR-016, FR-021              UC-006: FR-022
+' UC-003: FR-014                      UC-007: FR-012, FR-017, FR-020, FR-022
+' UC-004: FR-002, FR-010, FR-011, FR-015, FR-019, FR-021, FR-023
+' Transversales: FR-003 (IaC), FR-004 a FR-009 (documentación y flujo), NFR-005 a NFR-014

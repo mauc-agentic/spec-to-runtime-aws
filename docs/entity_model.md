@@ -1,6 +1,6 @@
 # Entity Model
 
-> Derivado de `docs/requirements.md` (FR-002, FR-010 a FR-020, NFR-007, NFR-009, NFR-010). Cubre el dominio de "Pregúntale al repo": usuarios con perfil y rol, documentos con nivel de acceso, conversaciones, invocaciones del agente y eventos de guardrails. Los usuarios y credenciales viven en Cognito; `APP_USER` guarda solo lo que el agente necesita conocer. Las entidades `QUESTION` y `INGESTION_JOB` cubren FR-020 (opcional) y FR-014.
+> Derivado de `docs/requirements.md` (FR-002, FR-010 a FR-023, NFR-007, NFR-009, NFR-010, NFR-013). Cubre "Pregúntale al repo": usuarios con rol, conversaciones con perfil de respuesta, documentos del repositorio, invocaciones del agente y eventos de guardrails. Los usuarios y credenciales viven en Cognito. Las conversaciones y solicitudes se guardan en DynamoDB (historial, análisis del ponente y cuotas); AgentCore Memory guarda solo el contexto que el agente necesita.
 
 ## Entity Relationship Diagram
 
@@ -8,6 +8,7 @@
 erDiagram
     APP_USER ||--o{ SESSION : "opens"
     APP_USER ||--o{ AGENT_REQUEST : "sends"
+    APP_USER ||--o{ USAGE_COUNTER : "consumes"
     SESSION ||--o{ AGENT_REQUEST : "groups"
     AGENT_REQUEST ||--o| AGENT_RESULT : "produces"
     AGENT_REQUEST ||--o{ TOOL_INVOCATION : "triggers"
@@ -15,42 +16,40 @@ erDiagram
     AGENT_RESULT ||--o{ CITATION : "cites"
     DOCUMENT ||--o{ CITATION : "is cited in"
     INGESTION_JOB ||--o{ DOCUMENT : "synchronizes"
-    AGENT_REQUEST ||--o| QUESTION : "may be published as"
-    APP_USER ||--o{ QUESTION : "asks"
 ```
 
 ### APP_USER
 
-Person who uses the agent. Identity comes from the Cognito JWT; this entity keeps the profile and role that drive answer style and document access.
+Person who uses the agent. Identity comes from the Cognito JWT; this entity keeps the role and the data needed for quotas and history.
 
 | Attribute   | Description                                          | Data Type | Length/Precision | Validation Rules                                       |
 |-------------|------------------------------------------------------|-----------|------------------|--------------------------------------------------------|
 | id          | Unique identifier                                    | Long      | 19               | Primary Key, Sequence                                  |
 | cognito_sub | Subject claim of the Cognito token                   | String    | 36               | Not Null, Unique                                       |
 | email       | Email used to sign in                                | String    | 254              | Not Null, Unique, Valid email format                   |
-| profile     | Audience type that shapes how the agent answers      | String    | 20               | Not Null, Values: Student, Professional, General       |
-| role        | What the user is allowed to see and do               | String    | 20               | Not Null, Values: Attendee, Presenter                  |
+| role        | What the user is allowed to do                       | String    | 20               | Not Null, Values: Participant, Speaker                 |
 | created_at  | Moment the user first reached the agent              | DateTime  | -                | Not Null                                               |
 
-**Constraints:** profile and role are read from the token on every request; the stored values are a snapshot for traceability. Only users with role Presenter may access documents with access level Presenter and the questions summary.
+**Constraints:** the role is read from the Cognito group in the token on every request; the stored value is a snapshot. Only users with role Speaker may run the speaker tools (top 10 of questions). A user can only read their own sessions, requests and results.
 
 ### SESSION
 
-One conversation of a user with the agent. Its identifier is the session of AgentCore Memory (short-term), so follow-up questions keep their context.
+One conversation of a user with the agent. Its identifier is the session of AgentCore Memory (short-term), so follow-up questions keep their context. The user picks the profile (Basic for students, Technical for professionals, General for the public) and may change it at any time.
 
 | Attribute  | Description                                        | Data Type | Length/Precision | Validation Rules                                  |
 |------------|----------------------------------------------------|-----------|------------------|---------------------------------------------------|
 | id         | Unique identifier                                  | Long      | 19               | Primary Key, Sequence                             |
 | session_id | Identifier of the AgentCore Memory session         | String    | 36               | Not Null, Unique                                  |
 | app_user_id | User who owns the conversation                    | Long      | 19               | Not Null, Foreign Key (APP_USER.id)               |
+| profile    | Answer style chosen by the user for this session   | String    | 20               | Not Null, Values: Basic, Technical, General       |
 | started_at | Moment the conversation began                      | DateTime  | -                | Not Null                                          |
 | last_activity_at | Moment of the latest request in the session  | DateTime  | -                | Not Null                                          |
 
-**Constraints:** last_activity_at must not be before started_at. A session belongs to exactly one user; a user cannot read the memory of another user's session.
+**Constraints:** last_activity_at must not be before started_at. A session belongs to exactly one user; a user cannot read the memory of another user's session. Changing the profile applies from the next request.
 
 ### AGENT_REQUEST
 
-Represents one invocation of the agent received through the API, either answered synchronously or queued for asynchronous processing.
+Represents one invocation of the agent received through the API. Every request goes through SQS and is orchestrated by a Lambda that calls the agent and formats the answer.
 
 | Attribute    | Description                                              | Data Type | Length/Precision | Validation Rules                                       |
 |--------------|----------------------------------------------------------|-----------|------------------|--------------------------------------------------------|
@@ -59,13 +58,12 @@ Represents one invocation of the agent received through the API, either answered
 | app_user_id  | User who sent the request                                | Long      | 19               | Not Null, Foreign Key (APP_USER.id)                    |
 | session_id   | Conversation the request belongs to                      | Long      | 19               | Not Null, Foreign Key (SESSION.id)                     |
 | prompt       | Text sent by the caller to the agent                     | String    | 500              | Not Null                                               |
-| profile_applied | Profile used to shape the answer                      | String    | 20               | Not Null, Values: Student, Professional, General       |
-| mode         | Whether the request is answered directly or through SQS  | String    | 20               | Not Null, Values: Sync, Async                          |
-| status       | Current state of the request                             | String    | 20               | Not Null, Values: Received, Queued, Processing, Completed, Blocked, Failed |
+| profile_applied | Profile used to shape the answer                      | String    | 20               | Not Null, Values: Basic, Technical, General            |
+| status       | Current state of the request                             | String    | 20               | Not Null, Values: Received, Queued, Processing, Completed, Blocked, Failed, Rejected |
 | created_at   | Moment the API received the request                      | DateTime  | -                | Not Null                                               |
 | completed_at | Moment the request reached Completed, Blocked or Failed  | DateTime  | -                | Optional                                               |
 
-**Constraints:** completed_at must be after created_at. Requests with mode Async pass through the Queued status; requests with mode Sync do not. A request in status Blocked has at least one GUARDRAIL_EVENT with action Blocked. profile_applied equals the profile in the user's token at the moment of the request.
+**Constraints:** completed_at must be after created_at. Every request passes through the Queued status. A request in status Blocked has at least one GUARDRAIL_EVENT with action Blocked. A request in status Rejected exceeded a usage limit and never reached the model. profile_applied equals the profile of the session at the moment of the request.
 
 ### AGENT_RESULT
 
@@ -75,7 +73,7 @@ Stores the outcome of an agent request, either the response text or the error th
 |------------------|-----------------------------------------------|-----------|------------------|------------------------------------|
 | id               | Unique identifier                             | Long      | 19               | Primary Key, Sequence              |
 | agent_request_id | Request this result belongs to                | Long      | 19               | Not Null, Foreign Key (AGENT_REQUEST.id) |
-| response_text    | Answer produced by the agent                  | String    | 2000             | Optional                           |
+| response_text    | Answer produced by the agent, formatted as Markdown | String | 2000        | Optional                           |
 | error_message    | Reason the request failed or was blocked      | String    | 500              | Optional                           |
 | duration_ms      | Time the agent took to produce the outcome    | Integer   | 10               | Not Null, Min: 0, Max: 900000      |
 | created_at       | Moment the result was stored                  | DateTime  | -                | Not Null                           |
@@ -84,20 +82,19 @@ Stores the outcome of an agent request, either the response text or the error th
 
 ### DOCUMENT
 
-A repository document loaded into the knowledge base, with the access level that decides who may receive its content.
+A file of the GitHub repository (vision, requirements, entity model, use case and test case specs, talk notes, README) loaded into the knowledge base. The whole repository is public, so every document is available to every user.
 
 | Attribute      | Description                                          | Data Type | Length/Precision | Validation Rules                              |
 |----------------|------------------------------------------------------|-----------|------------------|-----------------------------------------------|
 | id             | Unique identifier                                    | Long      | 19               | Primary Key, Sequence                         |
 | source_path    | Path of the file in the repository                   | String    | 255              | Not Null, Unique                              |
 | title          | Human-readable title                                 | String    | 200              | Not Null                                      |
-| access_level   | Minimum role allowed to receive the content          | String    | 20               | Not Null, Values: Public, Presenter           |
 | checksum       | SHA-256 of the file content, used to detect changes  | String    | 64               | Not Null                                      |
 | sync_status    | State of the document in the knowledge base          | String    | 20               | Not Null, Values: Pending, Synced, Failed     |
 | ingestion_job_id | Latest job that synchronized the document          | Long      | 19               | Optional, Foreign Key (INGESTION_JOB.id)      |
 | synced_at      | Moment the document was last synchronized            | DateTime  | -                | Optional                                      |
 
-**Constraints:** synced_at is required when sync_status is Synced. A document only changes access_level through a new synchronization. The knowledge base metadata carries the same access_level, so retrieval can filter by role.
+**Constraints:** synced_at is required when sync_status is Synced. source_path is the path in the repository and is used to build the link shown in citations.
 
 ### INGESTION_JOB
 
@@ -127,7 +124,7 @@ Link between an agent result and a document that supported the answer.
 | excerpt          | Fragment of the document that supported the answer | String    | 500              | Not Null                                   |
 | relevance_score  | Similarity score returned by the knowledge base    | Decimal   | 5,4              | Not Null, Min: 0, Max: 1                   |
 
-**Constraints:** the access_level of the cited document must not exceed the role of the user who sent the request (NFR-009). A result cites a given document at most once.
+**Constraints:** a result cites a given document at most once. The link shown to the user is built from the document's source_path.
 
 ### GUARDRAIL_EVENT
 
@@ -144,24 +141,22 @@ Records what Bedrock Guardrails did with the input or the output of a request (F
 
 **Constraints:** category is required when action is Blocked or Anonymized. Every request has at least one GUARDRAIL_EVENT with direction Input.
 
-### QUESTION
+### USAGE_COUNTER
 
-Question published to the live question box during the talk (optional, FR-020). It reuses the agent request that answered it.
+Number of requests a user has made on a given day, used to enforce the per-user quota and the global cap (NFR-013).
 
-| Attribute        | Description                                       | Data Type | Length/Precision | Validation Rules                                |
-|------------------|---------------------------------------------------|-----------|------------------|-------------------------------------------------|
-| id               | Unique identifier                                 | Long      | 19               | Primary Key, Sequence                           |
-| app_user_id      | User who asked                                    | Long      | 19               | Not Null, Foreign Key (APP_USER.id)             |
-| agent_request_id | Request that processed the question               | Long      | 19               | Optional, Foreign Key (AGENT_REQUEST.id)        |
-| text             | Question as the audience wrote it                 | String    | 500              | Not Null                                        |
-| status           | State of the question in the queue                | String    | 20               | Not Null, Values: Queued, Answered, Failed      |
-| submitted_at     | Moment the question entered the queue             | DateTime  | -                | Not Null                                        |
+| Attribute    | Description                                    | Data Type | Length/Precision | Validation Rules                                 |
+|--------------|------------------------------------------------|-----------|------------------|--------------------------------------------------|
+| id           | Unique identifier                              | Long      | 19               | Primary Key, Sequence                            |
+| app_user_id  | User whose usage is counted                    | Long      | 19               | Not Null, Foreign Key (APP_USER.id)              |
+| usage_date   | Day the requests were made (UTC)               | Date      | -                | Not Null                                         |
+| request_count | Requests accepted that day                    | Integer   | 10               | Not Null, Min: 0, Max: 25                        |
 
-**Constraints:** agent_request_id is required when status is Answered. Only users with role Presenter may list or summarize questions of other users.
+**Constraints:** one counter per user and day. When request_count reaches 25, further requests that day are Rejected. The sum of all counters must not exceed 3000 for the project.
 
 ### TOOL_INVOCATION
 
-Records one tool call made by the agent while handling a request, whether the tool is a Lambda behind AgentCore Gateway or one provided by the AWS MCP server.
+Records one tool call made by the agent while handling a request, whether the tool is a Lambda behind AgentCore Gateway (for example `buscar_documentos` or the speaker-only `top_preguntas`) or one provided by the AWS MCP server.
 
 | Attribute        | Description                                     | Data Type | Length/Precision | Validation Rules                         |
 |------------------|-------------------------------------------------|-----------|------------------|------------------------------------------|
