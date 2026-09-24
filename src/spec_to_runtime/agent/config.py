@@ -14,8 +14,9 @@ class Settings:
     region: str = "us-east-1"
     model_id: str = "us.amazon.nova-2-lite-v1:0"
     repo_url: str = "https://github.com/mauc-agentic/spec-to-runtime-aws/blob/main"
-    # UC-004 BR-005: respuesta de unas 600 palabras (~800 tokens).
-    max_output_tokens: int = 800
+    # UC-004 BR-005: tope de unas 600 palabras. En español Nova gasta ~1,6 tokens por palabra y
+    # ignora el "350 palabras" del prompt: con 800 tokens 3 de 8 respuestas salieron cortadas.
+    max_output_tokens: int = 1000
     retrieval_top_k: int = 6
     # Calibrado con el corpus real (docs/charla/uc-003-sincronizacion.md): las preguntas sin
     # relación con el repo puntúan 0,60-0,64 y las relevantes 0,69 o más.
