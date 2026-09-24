@@ -8,7 +8,7 @@ El repo es público y solo el dueño (`@mauc-agentic`) puede mergear a `main`. T
 - Todo por PR, solo **squash merge**, 1 aprobación, aprobaciones descartadas si hay commits nuevos, conversaciones resueltas y revisión de code owner (`.github/CODEOWNERS`).
 - **Commits firmados** obligatorios (`required_signatures`). Los squash merges desde la web los firma GitHub (`web-flow`), por eso un PR con commits viejos sin firmar sí puede mergearse.
 - **Bypass del dueño solo vía PR** (rol admin, modo `pull_request`): el dueño puede mergear sus propios PRs sin segunda aprobación, pero nunca hacer push directo. Sin este bypass, un repo con un solo admin no podría mergear nada.
-- Los checks de CI (`python`, `terraform`) se exigen en el ruleset una vez que hayan corrido en un PR.
+- Checks de CI obligatorios (fijados a la app de GitHub Actions) y rama al día con `main` antes de mergear: `python (ruff + pytest)` y `terraform (fmt + validate + checkov)`.
 
 ## Ajustes del repo y seguridad
 
