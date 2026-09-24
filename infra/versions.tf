@@ -17,8 +17,9 @@ terraform {
   }
 
   # Bucket creado por infra/bootstrap. Locking nativo de S3 (use_lockfile), sin DynamoDB.
+  # El nombre del bucket lleva el ID de la cuenta, así que NO se escribe aquí (el repositorio es
+  # público): se pasa con `terraform init -backend-config=backend.hcl` (ver backend.hcl.example).
   backend "s3" {
-    bucket       = "spec-to-runtime-tfstate-992382848403"
     key          = "spec-to-runtime/terraform.tfstate"
     region       = "us-east-1"
     encrypt      = true

@@ -1,0 +1,2 @@
+# Copia este archivo a infra/terraform.tfvars (queda fuera de git: *.tfvars está en .gitignore).
+alert_email = "tu-correo@example.com"

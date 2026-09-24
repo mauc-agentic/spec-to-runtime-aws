@@ -26,3 +26,9 @@ El bucket del state no puede crearse con el state que aloja. `infra/bootstrap/` 
 - `terraform` MCP probado: `get_latest_provider_version` devolvió el provider `aws` 6.66.0.
 - `claude plugin list` muestra `aiup-core` varias veces, pero no es un duplicado: es una instalación por proyecto (scope project). Este repo está en 2.5.4; solo `Perfumeria` sigue en 2.5.3.
 - Falta confirmar acceso real al modelo de Bedrock que use el agente (los modelos Anthropic aparecen listados en us-east-1).
+
+## Archivos locales que no van a git (repositorio público)
+
+- `infra/backend.hcl`: `bucket = "spec-to-runtime-tfstate-<account-id>"`. Se usa con `terraform -chdir=infra init -backend-config=backend.hcl`. El modelo es `infra/backend.hcl.example`. Sin ese archivo, `init` pregunta el nombre del bucket.
+- `infra/terraform.tfvars`: `alert_email = "..."`, el correo de las alertas de presupuesto. El modelo es `infra/terraform.tfvars.example`. La variable ya no tiene valor por defecto.
+- Se reinicializa el backend con `-reconfigure` si cambia de máquina o de archivo; el estado sigue en el mismo bucket, sin migración.

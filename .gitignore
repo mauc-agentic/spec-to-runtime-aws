@@ -30,6 +30,9 @@ crash.log
 .build/
 !agent_image.auto.tfvars
 
+# Nombre del bucket de estado (lleva el ID de la cuenta): local, con backend.hcl.example como modelo
+infra/backend.hcl
+
 # Configuración generada por Terraform para la web (infra/web.tf)
 web/config.js
 web/node_modules/

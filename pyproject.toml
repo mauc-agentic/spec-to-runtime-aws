@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Agente Strands en Bedrock AgentCore derivado de specs AIUP"
 readme = "README.md"
 authors = [
-    { name = "mau-cloud", email = "migueluribe.ing@icloud.com" }
+    { name = "mau-cloud", email = "63675607+mauc-agentic@users.noreply.github.com" }
 ]
 requires-python = ">=3.14,<3.15"
 dependencies = [
