@@ -14,7 +14,7 @@ erDiagram
     AGENT_REQUEST ||--o{ TOOL_INVOCATION : "triggers"
     AGENT_REQUEST ||--o{ GUARDRAIL_EVENT : "is checked by"
     AGENT_RESULT ||--o{ CITATION : "cites"
-    DOCUMENT ||--o{ CITATION : "is cited in"
+    DOCUMENT |o--o{ CITATION : "is cited in (or an external AWS page)"
     INGESTION_JOB ||--o{ DOCUMENT : "synchronizes"
 ```
 
@@ -57,9 +57,10 @@ Represents one invocation of the agent received through the API. Every request g
 | request_id   | Correlation ID used to trace the request in CloudWatch   | String    | 36               | Not Null, Unique                                       |
 | app_user_id  | User who sent the request                                | Long      | 19               | Not Null, Foreign Key (APP_USER.id)                    |
 | session_id   | Conversation the request belongs to                      | Long      | 19               | Not Null, Foreign Key (SESSION.id)                     |
-| prompt       | Text sent by the caller to the agent                     | String    | 500              | Not Null                                               |
+| prompt       | Text sent to the agent, stored with emails and phone numbers already masked| String    | 500              | Not Null                                               |
 | profile_applied | Profile used to shape the answer                      | String    | 20               | Not Null, Values: Basic, Technical, General            |
 | status       | Current state of the request                             | String    | 20               | Not Null, Values: Received, Queued, Processing, Completed, Blocked, Failed, Rejected |
+| notices      | Notices shown to the participant about how the request was handled | String (list) | 200 | Optional, Values per item: personal_data_masked, memory_unavailable |
 | created_at   | Moment the API received the request                      | DateTime  | -                | Not Null                                               |
 | completed_at | Moment the request reached Completed, Blocked or Failed  | DateTime  | -                | Optional                                               |
 
@@ -74,6 +75,8 @@ Stores the outcome of an agent request, either the response text or the error th
 | id               | Unique identifier                             | Long      | 19               | Primary Key, Sequence              |
 | agent_request_id | Request this result belongs to                | Long      | 19               | Not Null, Foreign Key (AGENT_REQUEST.id) |
 | response_text    | Answer produced by the agent, formatted as Markdown | String | 2000        | Optional                           |
+| no_source        | The answer says that no repository document supports the question | Boolean | - | Not Null, Default: false |
+| truncated        | The answer was cut at the length limit                         | Boolean   | -                | Not Null, Default: false           |
 | error_message    | Reason the request failed or was blocked      | String    | 500              | Optional                           |
 | duration_ms      | Time the agent took to produce the outcome    | Integer   | 10               | Not Null, Min: 0, Max: 900000      |
 | created_at       | Moment the result was stored                  | DateTime  | -                | Not Null                           |
@@ -82,7 +85,7 @@ Stores the outcome of an agent request, either the response text or the error th
 
 ### DOCUMENT
 
-A file of the GitHub repository (vision, requirements, entity model, use case and test case specs, talk notes, README) loaded into the knowledge base. The whole repository is public, so every document is available to every user.
+A file of the GitHub repository (vision, requirements, entity model, use case and test case specs, talk notes, README) loaded into the knowledge base. Tests, helper scripts and working logs (the pre-talk checklist and the browser-test report) are not loaded (UC-003 BR-001). The whole repository is public, so every document is available to every user.
 
 | Attribute      | Description                                          | Data Type | Length/Precision | Validation Rules                              |
 |----------------|------------------------------------------------------|-----------|------------------|-----------------------------------------------|
@@ -120,11 +123,13 @@ Link between an agent result and a document that supported the answer.
 |------------------|----------------------------------------------------|-----------|------------------|--------------------------------------------|
 | id               | Unique identifier                                  | Long      | 19               | Primary Key, Sequence                      |
 | agent_result_id  | Result that cites the document                     | Long      | 19               | Not Null, Foreign Key (AGENT_RESULT.id)    |
-| document_id      | Document used as source                            | Long      | 19               | Not Null, Foreign Key (DOCUMENT.id)        |
+| document_id      | Repository document used as source (empty for an external source) | Long | 19 | Optional, Foreign Key (DOCUMENT.id) |
+| external_title   | Title of an external page of the official AWS documentation | String    | 200              | Optional                                   |
+| external_url     | Link to that external page (only https to aws.amazon.com and subdomains) | String | 500 | Optional, Format: https URL                |
 | excerpt          | Fragment of the document that supported the answer | String    | 500              | Not Null                                   |
 | relevance_score  | Similarity score returned by the knowledge base    | Decimal   | 5,4              | Not Null, Min: 0, Max: 1                   |
 
-**Constraints:** a result cites a given document at most once. The link shown to the user is built from the document's source_path.
+**Constraints:** a result cites a given document at most once. Exactly one of document_id or external_url is filled. The link for a repository document is built from its source_path. External sources exist only in answers to the Ponente that used the AWS documentation tool (see TOOL_INVOCATION, source Mcp).
 
 ### GUARDRAIL_EVENT
 

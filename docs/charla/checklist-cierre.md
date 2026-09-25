@@ -14,6 +14,8 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 - [x] Las fuentes de la documentación de AWS salen siempre al final de la respuesta del Ponente (antes dependían de que el modelo las citara); prueba de humo 15/15 sin necesitar el reintento.
 - [x] Ensayo del 2026-09-24 con `main` ya mergeado (#29): `smoke_test.py` 15/15, sin reintentos; todas las respuestas entre 3 y 8 s con el contenedor caliente (NFR-011 pide 10 s o menos). Knowledge Base sincronizada con `main` (2 nuevos, 11 modificados, 98 escaneados, 0 fallidos).
 - [x] Datos de ensayo vaciados con `reset_event_data.py --yes` y verificados con la simulación: 0 preguntas, 0 contadores de cuota y 0 eventos de memoria (había 486 de 32 actores de prueba).
+- [x] Registro validado el 2026-09-25 con el registro abierto: código correcto, código equivocado, correo repetido y contraseña débil, y una cuenta creada en la web (Participante, sin Ponente). Cuenta de prueba de una persona real dejada en el pool.
+- [x] AIUP al día el 2026-09-25: modelo de entidades, FR-014, UC-004 (BR-003), diagrama de casos de uso y auditoría de cobertura.
 - [x] `main` validado tras los merges: tests, lint, Terraform sin desvío, checkov, validador de UC y CI en verde.
 
 ## Antes de la charla
