@@ -19,7 +19,7 @@ uv run ruff check . && uv run ruff format --check .    # lint y formato
 cd web && node --test                                  # tests de la web (renderizador de Markdown)
 ```
 
-Infraestructura y despliegue (detalle en `CLAUDE.md` y `docs/charla/`):
+Infraestructura y despliegue. La reconstrucción completa desde cero (tres fases, cuenta del Ponente, registro y cómo destruir) está en `docs/charla/reconstruccion.md`; resumen:
 
 ```bash
 cp infra/backend.hcl.example infra/backend.hcl          # bucket del estado (lleva el ID de tu cuenta)

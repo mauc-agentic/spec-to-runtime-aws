@@ -41,6 +41,9 @@ note right of UC007
   Solo el rol Ponente.
   Se resuelve con una herramienta
   del agente vía AgentCore Gateway.
+  El Ponente también puede consultar
+  la documentación oficial de AWS
+  (servidor MCP externo, fuentes visibles).
 end note
 
 @enduml
@@ -49,5 +52,5 @@ end note
 ' UC-001: FR-013                      UC-005: FR-018
 ' UC-002: FR-016, FR-021              UC-006: FR-022
 ' UC-003: FR-014                      UC-007: FR-012, FR-017, FR-020, FR-022
-' UC-004: FR-002, FR-010, FR-011, FR-015, FR-019, FR-021, FR-023
+' UC-004: FR-002, FR-010, FR-011, FR-012, FR-015, FR-019, FR-021, FR-023
 ' Transversales: FR-003 (IaC), FR-004 a FR-009 (documentación y flujo), NFR-005 a NFR-014

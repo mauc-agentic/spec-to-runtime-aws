@@ -1,4 +1,4 @@
-# Cobertura de los casos de uso (auditoría del 2026-09-24)
+# Cobertura de los casos de uso (auditoría del 2026-09-24, actualizada el 2026-09-25)
 
 Auditoría a mano de cada UC contra el código, los tests y las verificaciones reales (`/coverage-check` no está disponible en esta sesión). Método: por cada flujo alterno (A) y regla de negocio (BR) se busca evidencia: un **test** que la ejercite, una **verificación real** con AWS (prueba de humo, prueba en el navegador o medición), o el **código** que la implementa. Sin ninguna de las tres es un **hueco**; si el código hace algo distinto de lo que dice la spec es una **deriva**.
 
@@ -8,10 +8,10 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 
 | UC | Estado | Resumen |
 |---|---|---|
-| UC-001 Autenticarse | Implemented | Cubierto; spec ajustada a Cognito el 2026-09-24 (bloqueo y contraseña) |
+| UC-001 Autenticarse | Implemented | Cubierto; spec ajustada a Cognito el 2026-09-24 (bloqueo y contraseña); el flujo de registro con el registro abierto se validó el 2026-09-25 (ver abajo) |
 | UC-002 Elegir perfil | Implemented | Cubierto; spec ajustada (General por defecto); verificado en un navegador real el 2026-09-24 (sin pruebas automáticas de la web) |
-| UC-003 Sincronizar documentos | Implemented | El mejor cubierto; el `POST` con cambios se probó el 2026-09-24 (a mano, por la API y sin navegador) |
-| UC-004 Consultar al agente | Implemented | Muy cubierto; A4 y la deriva de A1 cerradas el 2026-09-24 |
+| UC-003 Sincronizar documentos | Implemented | El mejor cubierto; el `POST` con cambios se probó el 2026-09-24 (por la API); BR-001 actualizada: no se cargan `tests/`, `scripts/` ni las bitácoras de trabajo |
+| UC-004 Consultar al agente | Implemented | Muy cubierto; A4 y la deriva de A1 cerradas el 2026-09-24; BR-003 enmendada el 2026-09-25 con la excepción del Ponente (documentación oficial de AWS, ver `agentcore-gateway.md`) |
 | UC-005 Continuar conversación | Implemented | Cubierto; A4 cerrado el 2026-09-24 (con un límite: ver abajo) |
 | UC-006 Consultar historial | Implemented | Cubierto; A4 cerrado el 2026-09-24 |
 | UC-007 Top 10 de preguntas | Implemented | Muy cubierto; derivas cerradas el 2026-09-24 |
@@ -22,7 +22,8 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 - **Cubierto:** flujo principal, A1, A4, A5, A8, BR-001, BR-002, BR-003, BR-007 (5 tests de la Lambda y la prueba en el navegador con registro real y sesión de Ponente); BR-006 y BR-008 por configuración de Cognito.
 - **Deriva resuelta, A3 y BR-005:** la spec pasa a "bloqueo temporal decidido por Cognito, sin cifras". No se ha comprobado aquí cuántos intentos ni cuánto dura el bloqueo real; la spec no promete ninguna cifra.
 - **Deriva resuelta, A7 y BR-004:** la spec pide ahora 8 caracteres, una minúscula y un número, que es la política real de Cognito.
-- **A2 (contraseña incorrecta):** verificado en un navegador real el 2026-09-24 (mensaje genérico, igual para cuenta existente e inexistente). **Sin verificar:** A6 (correo ya registrado), porque exige crear cuentas; no hay test automático de `web/cognito.js`.
+- **A2 (contraseña incorrecta):** verificado en un navegador real el 2026-09-24 (mensaje genérico, igual para cuenta existente e inexistente).
+- **Flujo de registro (2026-09-25):** con el registro abierto se comprobó por la API real y con una cuenta creada en la web: código equivocado rechazado (A4), contraseña débil rechazada (A7), **correo ya registrado rechazado (A6)**, cuenta nueva confirmada sin correo, que entra sin ser Ponente, pregunta y no puede sincronizar (403). **Sin verificar:** el registro cerrado (A5) y el límite de 100 cuentas (BR-007); no hay test automático de `web/cognito.js`.
 
 ### UC-002 Elegir perfil de respuesta
 - **Cubierto:** flujo principal, A2, A3, A4, BR-001, BR-002, BR-003, BR-004, BR-005 (2 tests del agente y de la API, y la prueba en el navegador).
@@ -62,13 +63,13 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 | FR-002, FR-003, FR-010, FR-011, FR-013 a FR-016, FR-018 a FR-023 | Implementado | Ver los UC |
 | FR-017 (herramientas solo para el Ponente) | Implementado | El rol sale del token; los participantes no reciben las herramientas |
 | FR-012 (herramientas por AgentCore Gateway) | Implementado | Dos targets: Lambda (las tres herramientas del Ponente) y el servidor MCP público de conocimiento de AWS (búsqueda en su documentación). Verificado con la prueba de humo y con el span de la llamada; ver `docs/charla/agentcore-gateway.md` |
-| FR-001, FR-004 | Parcial | TC-001 escrito (`Draft`, sin automatizar); falta una reproducción desde un clon limpio |
+| FR-001, FR-004 | Parcial | TC-001 escrito (`Draft`, sin automatizar) y el procedimiento de reconstrucción escrito (`reconstruccion.md`, verificado en seco desde un clon limpio: `init` y `plan` sin cambios); falta la reconstrucción completa medida |
 | FR-005 a FR-007, FR-009 | Implementado | `docs/charla/` y el flujo por ramas y PR |
 | FR-008 (trazabilidad spec-código) | Parcial | Esta auditoría es la primera; falta cerrar los huecos |
 | NFR-005, NFR-006, NFR-007, NFR-008, NFR-009, NFR-010, NFR-012, NFR-013, NFR-014 | Implementado | Medidos o probados; ver `docs/charla/` |
-| NFR-011 (latencia) | Cumple con el contenedor caliente | La primera pregunta tras un despliegue tarda ~15 s |
+| NFR-011 (latencia) | Cumple con el contenedor caliente | Las respuestas de las pruebas tardan de 3 a 10 s (cifras sueltas, sin p95); la primera pregunta tras un despliegue o 5 minutos de inactividad tarda ~15 s. El p95 real se mide con los datos de la charla |
 | NFR-001 a NFR-003 | Parcial | Se cumplieron con excepciones (el #18 se mergeó antes de sus últimos commits) |
-| NFR-004 (reproducibilidad en 30 min) | Sin verificar | Nadie ha reproducido desde un clon limpio |
+| NFR-004 (reproducibilidad en 30 min) | Sin verificar | Solo se verificó en seco (`init` y `plan` desde un clon limpio). La prueba completa (destruir, reconstruir y medir) está planificada tras la charla |
 
 ## Pendiente, por prioridad para la charla (2026-09-26)
 
@@ -78,4 +79,5 @@ El autor aprobó los siete UC el 2026-09-24. **Se implementaron antes de aprobar
 4. ~~Decidir las derivas~~ Resueltas el 2026-09-24: UC-004 A1 en código; UC-001, UC-002, UC-004 y UC-007 en la spec (UC-007 BR-002 en ambos).
 5. ~~Probar el `POST /admin/sync` con cambios~~ Hecho por la API el 2026-09-24; queda pulsar el botón en la web.
 6. Probar la web en un **celular físico** y con lector de pantalla.
-7. Ensayo con `scripts/smoke_test.py` unos minutos antes, y vaciar datos con `scripts/reset_event_data.py --yes`.
+7. ~~Ensayo~~ Hecho: `scripts/warmup.py` (calienta y vacía los datos sin tocar el registro) unos 5 minutos antes de la charla.
+8. **Tras la charla:** capturar datos reales, la prueba de reconstrucción desde un clon limpio y el cierre (`checklist-cierre.md`, «Plan de cierre»).

@@ -14,6 +14,8 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 - [x] Las fuentes de la documentación de AWS salen siempre al final de la respuesta del Ponente (antes dependían de que el modelo las citara); prueba de humo 15/15 sin necesitar el reintento.
 - [x] Ensayo del 2026-09-24 con `main` ya mergeado (#29): `smoke_test.py` 15/15, sin reintentos; todas las respuestas entre 3 y 8 s con el contenedor caliente (NFR-011 pide 10 s o menos). Knowledge Base sincronizada con `main` (2 nuevos, 11 modificados, 98 escaneados, 0 fallidos).
 - [x] Datos de ensayo vaciados con `reset_event_data.py --yes` y verificados con la simulación: 0 preguntas, 0 contadores de cuota y 0 eventos de memoria (había 486 de 32 actores de prueba).
+- [x] Registro validado el 2026-09-25 con el registro abierto: código correcto, código equivocado, correo repetido y contraseña débil, y una cuenta creada en la web (Participante, sin Ponente). Cuenta de prueba de una persona real dejada en el pool.
+- [x] AIUP al día el 2026-09-25: modelo de entidades, FR-014, UC-004 (BR-003), diagrama de casos de uso y auditoría de cobertura.
 - [x] `main` validado tras los merges: tests, lint, Terraform sin desvío, checkov, validador de UC y CI en verde.
 
 ## Antes de la charla
@@ -63,3 +65,14 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 - **Presupuesto:** AWS Budgets marca 0,00 USD gastados y una previsión de 0,02 USD, pero Billing tarda de 8 a 24 horas en reflejar el gasto, así que no es una lectura fiable de lo gastado hoy. La protección real son las cuotas de la API y el corte automático al 90 %.
 - **Estado:** `terraform plan` sobre `main`: «No changes». CI de `main` en curso cuando se miró.
 - **Entorno:** sigue desplegado y gastando (NFR-014 pide destruirlo al terminar). Reconstruirlo antes de la charla lleva unos minutos, con el orden documentado en `agentcore-gateway.md`.
+
+## Plan de cierre tras la charla (acordado el 2026-09-24)
+
+Orden acordado: primero la prueba de reconstrucción desde cero, después destruir.
+
+1. **Capturar datos reales antes de destruir (yo, en modo lectura):** el top de preguntas y la actividad (anónimos), la latencia real (p50 y p95, para confirmar NFR-011), tokens y estimación de costo. La tabla de preguntas, los logs y las trazas se pierden al destruir.
+2. **Prueba de reconstrucción (NFR-004, FR-004):** con `docs/charla/reconstruccion.md` en la mano, destruir, crear todo desde un clon limpio siguiendo solo ese documento, medir el tiempo total y por fase contra los 30 minutos, y volver a destruir. Anotar todo paso manual que el documento no recoja.
+3. **Mejoras que la prueba debe decidir** (se aplican durante la reconstrucción, no antes, para no dejar el entorno de la charla con cambios pendientes): quitar la fase 1 con `-target` haciendo que la política del orquestador no dependa del ARN del Runtime, y declarar en Terraform el grupo de logs del Runtime, que hoy `destroy` deja atrás (ya hay uno huérfano del entorno anterior).
+4. **Comprobar que no queda nada (NFR-014):** el barrido por etiqueta debe dar 0 y no debe quedar ningún grupo de logs `/aws/bedrock-agentcore/runtimes/...`. Decidir si se conserva el bucket del estado (`prevent_destroy`; guarda el estado, con valores sensibles).
+5. **Gasto real:** Billing tarda de 8 a 24 horas en reflejarlo; mirar 1 o 2 días después y comparar el costo por consulta con los 0,010 USD estimados (NFR-012). El historial de costos sobrevive al `destroy`.
+6. **Cierre en AIUP y en el repositorio:** estados de los UC y TC-001, requisitos `Parcial` y `Needs review`, pendientes sin hacer convertidos en issues, retrospectiva en `docs/charla/`, ramas mergeadas, archivos temporales y un tag del estado de la charla.

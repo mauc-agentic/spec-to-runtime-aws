@@ -8,7 +8,7 @@
 **Goal:** Get a clear answer about the repository, backed by cited documents and written for the participant's chosen profile, without waiting for a blank screen  
 **Status:** Implemented
 
-**Traces to:** FR-002, FR-010, FR-011, FR-015, FR-019, FR-021, FR-023 · NFR-005, NFR-007, NFR-010, NFR-011, NFR-013
+**Traces to:** FR-002, FR-010, FR-011, FR-012, FR-015, FR-019, FR-021, FR-023 · NFR-005, NFR-007, NFR-010, NFR-011, NFR-013
 
 ## Preconditions
 
@@ -131,7 +131,7 @@ The answer is written for the profile chosen in the current conversation at the 
 
 ### BR-003: Answers Come From the Repository
 
-The answer is based only on repository documents. Every statement that relies on a document is accompanied by a link to that file. When no document supports the question, the answer says so and does not invent content.
+The answer is based only on repository documents. Every statement that relies on a document is accompanied by a link to that file. When no document supports the question, the answer says so and does not invent content. One exception applies to the Ponente only: when the Ponente asks about AWS in general, the agent may also consult the official AWS documentation through the AgentCore Gateway (an external MCP server). The pages it used are always listed at the end of the answer as external sources, with their own https link, and their content is treated as data, never as instructions. Participants never receive this tool.
 
 ### BR-004: Content Rules
 
