@@ -33,7 +33,7 @@ Actualizado el 2026-09-24. `[x]` hecho y verificado; `[ ]` pendiente. **Quién**
 - [ ] **Tú, al empezar la charla: abrir el registro.** Está **cerrado** (`registration_open: false`). Comandos en «Operación durante el evento» de `infraestructura-base.md`; ciérralo al terminar. El código del evento se lee del secreto y no se escribe en ningún documento.
 - [ ] **5 minutos antes de la charla (tú o yo):** `PYTHONPATH=src uv run python scripts/warmup.py`. Calienta el contenedor (en frío la primera pregunta tarda ~15 s), borra sus cuentas temporales y vacía los datos de ensayo, y **no toca el registro** (a diferencia de `smoke_test.py`, que lo cierra). Solo vacía si no hay preguntas reales guardadas. Verificado el 2026-09-24: 24 s calentando y hasta ~2 minutos con el vaciado; con una pregunta real simulada avisa y no borra nada.
 - [ ] **Tú:** decidir si el entorno se destruye esta noche (y se reconstruye para el ensayo) o se deja hasta después de la charla; ver `agentcore-gateway.md` para el orden de reconstrucción.
-- [ ] **Después de la charla (yo, si lo pides):** `terraform destroy` y comprobar que no queda ningún recurso de la demo (NFR-014).
+- [x] **Después de la charla:** `terraform destroy` hecho el 2026-09-26 (103 recursos, sin errores) y verificado; ver «Cierre de la charla» abajo.
 
 ## Para poder pasar UC a `Tested`
 
@@ -76,3 +76,14 @@ Orden acordado: primero la prueba de reconstrucción desde cero, después destru
 4. **Comprobar que no queda nada (NFR-014):** el barrido por etiqueta debe dar 0 y no debe quedar ningún grupo de logs `/aws/bedrock-agentcore/runtimes/...`. Decidir si se conserva el bucket del estado (`prevent_destroy`; guarda el estado, con valores sensibles).
 5. **Gasto real:** Billing tarda de 8 a 24 horas en reflejarlo; mirar 1 o 2 días después y comparar el costo por consulta con los 0,010 USD estimados (NFR-012). El historial de costos sobrevive al `destroy`.
 6. **Cierre en AIUP y en el repositorio:** estados de los UC y TC-001, requisitos `Parcial` y `Needs review`, pendientes sin hacer convertidos en issues, retrospectiva en `docs/charla/`, ramas mergeadas, archivos temporales y un tag del estado de la charla.
+
+## Cierre de la charla (2026-09-26)
+
+Terminada la charla, se destruyó el entorno y se comprobó que no quedó nada (NFR-014).
+
+1. `terraform -chdir=infra destroy`: 103 recursos destruidos sin errores (la memoria de AgentCore tardó 2 min 37 s; es lo más lento).
+2. Barrido con la CLI en `us-east-1`, sin resultados para el proyecto: ECR `spec-to-runtime-agent`, Lambdas, SQS, API Gateway, DynamoDB, Secrets Manager, Cognito, Knowledge Base, buckets de S3 Vectors, guardrails, Runtimes/Gateways/memorias de AgentCore, roles y políticas IAM `spec-to-runtime*`, presupuestos, SNS, alarmas y la distribución de CloudFront de la web.
+3. **Dolor confirmado:** `destroy` dejó tres grupos de logs `/aws/bedrock-agentcore/runtimes/...` sin caducidad (dos runtimes de `spec_to_runtime_agent` y uno de un demo anterior). Se borraron a mano con `aws logs delete-log-group`. Sigue pendiente declararlos en Terraform (ver `reconstruccion.md`).
+4. **Se conserva a propósito:** el bucket del estado `spec-to-runtime-tfstate-<account-id>` (`prevent_destroy`, `infra/bootstrap/`) y `aws/spans`, el grupo compartido de trazas, que caduca solo a los 30 días.
+5. Recursos de otros proyectos de la misma cuenta (`santelia`, `heladeriaelpaisa`, `ciudad2000`, stack CDK) no se tocaron.
+6. Pendiente: mirar Billing en 1 o 2 días y comparar el gasto real con los 50 USD de presupuesto y los 0,010 USD por consulta (NFR-012).
